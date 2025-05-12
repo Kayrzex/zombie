@@ -100,8 +100,8 @@
       bottom: 48px;
       width: 60px;
       height: 60px;
-      background: rgba(255, 80, 0, 0.7);
-      border: 2px solid #fff;
+      background: #ff0033;
+      border: 3px solid #fff200;
       border-radius: 50%;
       color: #fff;
       font-size: 32px;
@@ -109,14 +109,17 @@
       align-items: center;
       justify-content: center;
       z-index: 2001;
-      box-shadow: 0 2px 12px #0008;
+      box-shadow: 0 2px 16px #ff003388, 0 0 0 4px #fff20055;
       user-select: none;
       pointer-events: auto;
-      transition: background 0.2s;
+      transition: background 0.2s, box-shadow 0.2s;
+      outline: 3px solid #fff200;
+      outline-offset: 0px;
     }
 
     #fireBtn:active {
-      background: rgba(255, 180, 0, 0.9);
+      background: #ff3366;
+      box-shadow: 0 2px 24px #ff0033cc, 0 0 0 6px #fff20099;
     }
 
     @media (max-width: 900px) {
