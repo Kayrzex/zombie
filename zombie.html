@@ -640,6 +640,9 @@
       updateGame();
       gameCanvas.style.display = '';
       uiDiv.style.display = '';
+      // Karakter seçme ve başlat ekranı tekrar gösterilmesin
+      startScreen.style.display = 'none';
+      introVideoContainer.style.display = 'none';
     }
 
     window.addEventListener('keydown', e => {
