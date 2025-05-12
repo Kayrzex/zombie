@@ -493,7 +493,7 @@
       if (window.isMobileTouchMove && window.mobileTarget) {
         const dx = window.mobileTarget.x - (ninja.x + ninja.width / 2);
         const dy = window.mobileTarget.y - (ninja.y + ninja.height / 2);
-        const dist = Math.sqrt(dx*dx + dy*dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 6) {
           ninja.x += (dx / dist) * moveSpeed;
           ninja.y += (dy / dist) * moveSpeed;
@@ -772,7 +772,7 @@
     function setupMobileTouchMove() {
       if (!isMobile()) return;
       const canvas = document.getElementById('gameCanvas');
-      canvas.addEventListener('touchstart', function(e) {
+      canvas.addEventListener('touchstart', function (e) {
         if (e.touches.length > 0) {
           const rect = canvas.getBoundingClientRect();
           window.isMobileTouchMove = true;
@@ -782,7 +782,7 @@
           };
         }
       });
-      canvas.addEventListener('touchmove', function(e) {
+      canvas.addEventListener('touchmove', function (e) {
         if (e.touches.length > 0) {
           const rect = canvas.getBoundingClientRect();
           window.mobileTarget = {
@@ -791,7 +791,7 @@
           };
         }
       });
-      canvas.addEventListener('touchend', function(e) {
+      canvas.addEventListener('touchend', function (e) {
         window.isMobileTouchMove = false;
         window.mobileTarget = null;
       });
