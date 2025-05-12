@@ -45,88 +45,6 @@
       padding: 8px 16px;
       font-size: 16px;
     }
-
-    /* Mobil yön tuşları */
-    #mobileControls {
-      position: fixed;
-      left: 16px;
-      bottom: 16px;
-      z-index: 2000;
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      pointer-events: none;
-    }
-
-    .mobile-row {
-      display: flex;
-      flex-direction: row;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .mobile-btn {
-      width: 44px;
-      height: 44px;
-      background: rgba(40, 40, 40, 0.5);
-      border: 2px solid #fff;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0.7;
-      pointer-events: auto;
-      user-select: none;
-      transition: background 0.2s;
-    }
-
-    .mobile-btn:active {
-      background: rgba(255, 255, 255, 0.2);
-      opacity: 1;
-    }
-
-    @media (max-width: 900px) {
-      #mobileControls {
-        display: flex;
-      }
-    }
-
-    /* Mobil ateş tuşu */
-    #fireBtn {
-      position: fixed;
-      right: 24px;
-      bottom: 48px;
-      width: 60px;
-      height: 60px;
-      background: #ff0033;
-      border: 3px solid #fff200;
-      border-radius: 50%;
-      color: #fff;
-      font-size: 32px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2001;
-      box-shadow: 0 2px 16px #ff003388, 0 0 0 4px #fff20055;
-      user-select: none;
-      pointer-events: auto;
-      transition: background 0.2s, box-shadow 0.2s;
-      outline: 3px solid #fff200;
-      outline-offset: 0px;
-    }
-
-    #fireBtn:active {
-      background: #ff3366;
-      box-shadow: 0 2px 24px #ff0033cc, 0 0 0 6px #fff20099;
-    }
-
-    @media (max-width: 900px) {
-      #fireBtn {
-        display: flex;
-      }
-    }
   </style>
 </head>
 
@@ -163,24 +81,6 @@
     <button onclick="restartGame()">Tekrar Oyna</button>
   </div>
 
-  <!-- Mobil yön tuşları -->
-  <div id="mobileControls">
-    <div class="mobile-row">
-      <div class="mobile-btn" id="btnUp">▲</div>
-    </div>
-    <div class="mobile-row">
-      <div class="mobile-btn" id="btnLeft">◀</div>
-      <div style="width:44px;"></div>
-      <div class="mobile-btn" id="btnRight">▶</div>
-    </div>
-    <div class="mobile-row">
-      <div class="mobile-btn" id="btnDown">▼</div>
-    </div>
-  </div>
-
-  <!-- Mobil ateş tuşu -->
-  <div id="fireBtn">🔥</div>
-
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -202,8 +102,7 @@
     const zombie2Img = new Image();
     zombie2Img.src = 'image/zombi2.png';
 
-    let ninja = { x: 100, y: 350, width: 64, height: 64, frame: 0 };
-
+    let ninja = { x: 100, y: 350, width: 64, height: 64, frame: 0, frameTick: 0 };
     let shurikens = [];
     let zombies = [];
     let particles = [];
@@ -224,6 +123,8 @@
     let armorDrops = [];
     let armorTimeout;
     let roundTextTimeout;
+    let roundTextShown = false;
+    let lives = 1; // Başlangıçta 1 can
 
     let selectedCharacter = 'ninja';
 
@@ -237,6 +138,7 @@
     const selectNinja = document.getElementById('selectNinja');
     const selectAsker = document.getElementById('selectAsker');
     let introWatched = false;
+    let firstGameStarted = false;
 
     function showStartScreen() {
       introVideoContainer.style.display = 'none';
@@ -248,9 +150,11 @@
       gameCanvas.style.display = '';
       uiDiv.style.display = '';
       setBackground(1);
+      roundTextShown = false; // Sadece ilk başlatmada gösterilsin
       showRoundText();
       updateUI();
       updateGame();
+      firstGameStarted = true;
     }
     // Video otomatik başlar, 8 saniye sonra başlat ekranı gelsin
     window.addEventListener('DOMContentLoaded', function () {
@@ -299,6 +203,7 @@
     }
 
     function showRoundText() {
+      if (roundTextShown) return;
       setBackground(round); // round yazısı gösterilirken arka planı da güncelle
       const roundDiv = document.createElement('div');
       roundDiv.id = 'roundText';
@@ -316,6 +221,7 @@
       roundTextTimeout = setTimeout(() => {
         if (roundDiv.parentNode) roundDiv.parentNode.removeChild(roundDiv);
       }, 2000); // 2 saniye sonra otomatik kaybolacak
+      roundTextShown = true;
     }
 
     function updateUI() {
@@ -329,26 +235,29 @@
         document.getElementById('ui').appendChild(bulletSpan);
       }
       bulletSpan.textContent = `Mermi: ${bullets}`;
+      // Can barı
+      let livesBar = document.getElementById('livesBar');
+      if (!livesBar) {
+        livesBar = document.createElement('span');
+        livesBar.id = 'livesBar';
+        livesBar.style.marginLeft = '20px';
+        document.getElementById('ui').appendChild(livesBar);
+      }
+      let heart = '❤️';
+      livesBar.textContent = `Can: ${heart.repeat(lives)}`;
     }
 
     function drawNinja() {
+      let img = selectedCharacter === 'asker' ? askerImg : ninjaImg;
+      // Yürüme efekti: hareket ediyorsa yukarı-aşağı 6px sallan
+      let offsetY = ninja.moving ? Math.sin(Date.now() / 120) * 6 : 0;
+      ctx.save();
       if (armorActive) {
-        ctx.save();
         ctx.shadowColor = 'deepskyblue';
         ctx.shadowBlur = 30;
-        if (selectedCharacter === 'asker') {
-          ctx.drawImage(askerImg, ninja.x, ninja.y, ninja.width, ninja.height);
-        } else {
-          ctx.drawImage(ninjaImg, ninja.x, ninja.y, ninja.width, ninja.height);
-        }
-        ctx.restore();
-      } else {
-        if (selectedCharacter === 'asker') {
-          ctx.drawImage(askerImg, ninja.x, ninja.y, ninja.width, ninja.height);
-        } else {
-          ctx.drawImage(ninjaImg, ninja.x, ninja.y, ninja.width, ninja.height);
-        }
       }
+      ctx.drawImage(img, ninja.x, ninja.y + offsetY, ninja.width, ninja.height);
+      ctx.restore();
     }
 
     function drawShurikens() {
@@ -483,11 +392,12 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Ninja hareket
-      let moveSpeed = 3; // Orta hız, biraz hızlandırıldı
-      if (keys['ArrowLeft']) ninja.x -= moveSpeed;
-      if (keys['ArrowRight']) ninja.x += moveSpeed;
-      if (keys['ArrowUp']) ninja.y -= moveSpeed;
-      if (keys['ArrowDown']) ninja.y += moveSpeed;
+      let moveSpeed = 3; // Sabit hız
+      let moving = false;
+      if (keys['ArrowLeft']) { ninja.x -= moveSpeed; moving = true; }
+      if (keys['ArrowRight']) { ninja.x += moveSpeed; moving = true; }
+      if (keys['ArrowUp']) { ninja.y -= moveSpeed; moving = true; }
+      if (keys['ArrowDown']) { ninja.y += moveSpeed; moving = true; }
 
       // Mobilde dokunulan yere gitme
       if (window.isMobileTouchMove && window.mobileTarget) {
@@ -497,11 +407,13 @@
         if (dist > 6) {
           ninja.x += (dx / dist) * moveSpeed;
           ninja.y += (dy / dist) * moveSpeed;
+          moving = true;
         }
       }
 
       ninja.x = Math.max(0, Math.min(canvas.width - ninja.width, ninja.x));
       ninja.y = Math.max(0, Math.min(canvas.height - ninja.height, ninja.y));
+      ninja.moving = moving;
 
       drawNinja();
 
@@ -531,6 +443,10 @@
               zombies.splice(zi, 1);
               score += 5;
               zombiesKilled++;
+              // Her 7 zombi öldürünce can ver
+              if (zombiesKilled % 7 === 0) {
+                lives++;
+              }
               spawnParticles(z.x + z.width / 2, z.y + z.height / 2);
               // Round kontrolü
               if (round <= roundThresholds.length && zombiesKilled >= roundThresholds[round - 1]) {
@@ -581,7 +497,14 @@
             zombies.splice(zi, 1); // Zırh varken zombi yok olur, oyuncu zarar görmez
             armorActive = false;
           } else {
-            endGame();
+            // Can sistemi: can varsa bir azalt, yoksa oyun bitir
+            if (lives > 1) {
+              lives--;
+              zombies.splice(zi, 1);
+            } else {
+              endGame();
+            }
+            updateUI();
           }
         }
       });
@@ -632,17 +555,20 @@
       bulletDrops = [];
       armorActive = false;
       armorDrops = [];
+      lives = 1; // Canı sıfırla
       scoreEl.textContent = score;
       gameOverEl.style.display = 'none';
       setBackground(1);
       updateUI();
-      showRoundText();
+      roundTextShown = false; // Sadece ilk başlatmada gösterilsin, restartta tekrar gösterilmesin
       updateGame();
       gameCanvas.style.display = '';
       uiDiv.style.display = '';
-      // Karakter seçme ve başlat ekranı tekrar gösterilmesin
-      startScreen.style.display = 'none';
-      introVideoContainer.style.display = 'none';
+      // Karakter seçme ve video ekranı asla gelmesin
+      if (firstGameStarted) {
+        startScreen.style.display = 'none';
+        introVideoContainer.style.display = 'none';
+      }
     }
 
     window.addEventListener('keydown', e => {
@@ -658,148 +584,20 @@
       keys[e.key] = false;
     });
 
-    // Mobil yön tuşları eventleri
-    function isMobile() {
-      return window.innerWidth < 900 || /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-    }
+    // Mobil yön ve ateş tuşlarını tamamen kaldır
     const mobileControls = document.getElementById('mobileControls');
-    if (isMobile()) {
-      mobileControls.style.display = 'flex';
-    }
-    function mobileKeyDown(dir) {
-      if (dir === 'left') keys['ArrowLeft'] = true;
-      if (dir === 'right') keys['ArrowRight'] = true;
-      if (dir === 'up') keys['ArrowUp'] = true;
-      if (dir === 'down') keys['ArrowDown'] = true;
-    }
-    function mobileKeyUp(dir) {
-      if (dir === 'left') keys['ArrowLeft'] = false;
-      if (dir === 'right') keys['ArrowRight'] = false;
-      if (dir === 'up') keys['ArrowUp'] = false;
-      if (dir === 'down') keys['ArrowDown'] = false;
-    }
-    document.getElementById('btnLeft').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('left'); });
-    document.getElementById('btnLeft').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('left'); });
-    document.getElementById('btnRight').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('right'); });
-    document.getElementById('btnRight').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('right'); });
-    document.getElementById('btnUp').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('up'); });
-    document.getElementById('btnUp').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('up'); });
-    document.getElementById('btnDown').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('down'); });
-    document.getElementById('btnDown').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('down'); });
-
-    // Mobil ateş tuşu eventleri
     const fireBtn = document.getElementById('fireBtn');
-    if (isMobile()) {
-      fireBtn.style.display = 'flex';
-    }
-    function fireShuriken() {
-      if (bullets > 0 && !gameOver) {
+    if (mobileControls) mobileControls.style.display = 'none';
+    if (fireBtn) fireBtn.style.display = 'none';
+
+    // Mobilde ekrana tıklayınca ateş et
+    canvas.addEventListener('touchstart', function (e) {
+      if (bullets > 0 && !gameOver && gameCanvas.style.display !== 'none') {
         shurikens.push({ x: ninja.x + 20, y: ninja.y + 10 });
         bullets--;
         updateUI();
       }
-    }
-    fireBtn.addEventListener('touchstart', e => { e.preventDefault(); fireShuriken(); });
-    fireBtn.addEventListener('mousedown', e => { e.preventDefault(); fireShuriken(); });
-
-    // Mobil yön tuşları ile hareket
-    function mobileKeyDown(dir) {
-      if (dir === 'up') keys['ArrowUp'] = true;
-      if (dir === 'down') keys['ArrowDown'] = true;
-      if (dir === 'left') keys['ArrowLeft'] = true;
-      if (dir === 'right') keys['ArrowRight'] = true;
-    }
-    function mobileKeyUp(dir) {
-      if (dir === 'up') keys['ArrowUp'] = false;
-      if (dir === 'down') keys['ArrowDown'] = false;
-      if (dir === 'left') keys['ArrowLeft'] = false;
-      if (dir === 'right') keys['ArrowRight'] = false;
-    }
-    // Mobilde ise yön tuşlarını göster
-    function isMobile() {
-      return window.innerWidth <= 900;
-    }
-    function setupMobileControls() {
-      if (!isMobile()) return;
-      const btnUp = document.getElementById('btnUp');
-      const btnDown = document.getElementById('btnDown');
-      const btnLeft = document.getElementById('btnLeft');
-      const btnRight = document.getElementById('btnRight');
-      // Touch eventler
-      btnUp.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('up'); });
-      btnUp.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('up'); });
-      btnDown.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('down'); });
-      btnDown.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('down'); });
-      btnLeft.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('left'); });
-      btnLeft.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('left'); });
-      btnRight.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('right'); });
-      btnRight.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('right'); });
-      // Mouse desteği (isteğe bağlı)
-      btnUp.addEventListener('mousedown', () => mobileKeyDown('up'));
-      btnUp.addEventListener('mouseup', () => mobileKeyUp('up'));
-      btnDown.addEventListener('mousedown', () => mobileKeyDown('down'));
-      btnDown.addEventListener('mouseup', () => mobileKeyUp('down'));
-      btnLeft.addEventListener('mousedown', () => mobileKeyDown('left'));
-      btnLeft.addEventListener('mouseup', () => mobileKeyUp('left'));
-      btnRight.addEventListener('mousedown', () => mobileKeyDown('right'));
-      btnRight.addEventListener('mouseup', () => mobileKeyUp('right'));
-    }
-    window.addEventListener('DOMContentLoaded', setupMobileControls);
-    window.addEventListener('resize', function () {
-      document.getElementById('mobileControls').style.display = isMobile() ? 'flex' : 'none';
     });
-
-    // Mobil dokunmatik hareket
-    window.isMobileTouchMove = false;
-    window.mobileTarget = null;
-    canvas.addEventListener('touchstart', e => {
-      e.preventDefault();
-      window.isMobileTouchMove = true;
-      const touch = e.touches[0];
-      window.mobileTarget = { x: touch.clientX, y: touch.clientY };
-    });
-    canvas.addEventListener('touchmove', e => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      window.mobileTarget = { x: touch.clientX, y: touch.clientY };
-    });
-    canvas.addEventListener('touchend', e => {
-      e.preventDefault();
-      window.isMobileTouchMove = false;
-      window.mobileTarget = null;
-    });
-
-    // Mobilde dokunulan yere gitme için eventler
-    window.isMobileTouchMove = false;
-    window.mobileTarget = null;
-    function setupMobileTouchMove() {
-      if (!isMobile()) return;
-      const canvas = document.getElementById('gameCanvas');
-      canvas.addEventListener('touchstart', function (e) {
-        if (e.touches.length > 0) {
-          const rect = canvas.getBoundingClientRect();
-          window.isMobileTouchMove = true;
-          window.mobileTarget = {
-            x: (e.touches[0].clientX - rect.left) * (canvas.width / rect.width),
-            y: (e.touches[0].clientY - rect.top) * (canvas.height / rect.height)
-          };
-        }
-      });
-      canvas.addEventListener('touchmove', function (e) {
-        if (e.touches.length > 0) {
-          const rect = canvas.getBoundingClientRect();
-          window.mobileTarget = {
-            x: (e.touches[0].clientX - rect.left) * (canvas.width / rect.width),
-            y: (e.touches[0].clientY - rect.top) * (canvas.height / rect.height)
-          };
-        }
-      });
-      canvas.addEventListener('touchend', function (e) {
-        window.isMobileTouchMove = false;
-        window.mobileTarget = null;
-      });
-    }
-    window.addEventListener('DOMContentLoaded', setupMobileTouchMove);
 
     highScoreEl.textContent = localStorage.getItem('highScore') || '0';
     setInterval(spawnZombie, 1500);
