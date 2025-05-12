@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ninja Zombi Savunması</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #000;
+      font-family: monospace;
+    }
+
+    #gameCanvas {
+      display: block;
+      margin: 0 auto;
+      background: url('image/arkaplan.png') no-repeat center center;
+      background-size: cover;
+      /* Arka planı orantılı şekilde büyütmek için cover kullanıldı */
+    }
+
+    #ui {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 18px;
+    }
+
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 24px;
+      text-align: center;
+      display: none;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 16px;
+    }
+
+    /* Mobil yön tuşları */
+    #mobileControls {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .mobile-row {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .mobile-btn {
+      width: 44px;
+      height: 44px;
+      background: rgba(40, 40, 40, 0.5);
+      border: 2px solid #fff;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.7;
+      pointer-events: auto;
+      user-select: none;
+      transition: background 0.2s;
+    }
+
+    .mobile-btn:active {
+      background: rgba(255, 255, 255, 0.2);
+      opacity: 1;
+    }
+
+    @media (max-width: 900px) {
+      #mobileControls {
+        display: flex;
+      }
+    }
+
+    /* Mobil ateş tuşu */
+    #fireBtn {
+      position: fixed;
+      right: 24px;
+      bottom: 48px;
+      width: 60px;
+      height: 60px;
+      background: rgba(255, 80, 0, 0.7);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 32px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2001;
+      box-shadow: 0 2px 12px #0008;
+      user-select: none;
+      pointer-events: auto;
+      transition: background 0.2s;
+    }
+
+    #fireBtn:active {
+      background: rgba(255, 180, 0, 0.9);
+    }
+
+    @media (max-width: 900px) {
+      #fireBtn {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="introVideoContainer"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1000;background:#000;display:flex;align-items:center;justify-content:center;">
+    <video id="introVideo" width="800" height="450" autoplay muted>
+      <source src="image/kısa.mp4" type="video/mp4">
+      Tarayıcınız video etiketini desteklemiyor.
+    </video>
+  </div>
+  <div id="startScreen"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;flex-direction:column;">
+    <h1 style="color:yellow;font-size:48px;text-shadow:2px 2px 8px #000;">Ninja Zombi Savunması</h1>
+    <div id="characterSelect" style="display:flex;gap:40px;margin-top:32px;">
+      <div id="selectNinja"
+        style="cursor:pointer;border:4px solid yellow;border-radius:16px;padding:16px;display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.7);">
+        <img src="image/ninja.png" alt="Ninja" width="96" height="96" style="display:block;">
+        <span style="color:white;font-size:22px;margin-top:8px;">Tel Ali Ninja</span>
+      </div>
+      <div id="selectAsker"
+        style="cursor:pointer;border:4px solid yellow;border-radius:16px;padding:16px;display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.7);">
+        <img src="image/asker.png" alt="Asker" width="96" height="96" style="display:block;">
+        <span style="color:white;font-size:22px;margin-top:8px;">Tel Ali Asker</span>
+      </div>
+    </div>
+    <button id="startBtn" style="font-size:32px;padding:16px 40px;margin-top:32px;">Başla</button>
+    <p style="color:white;font-size:20px;margin-top:16px;">Başlamak için Space veya Enter'a da basabilirsin</p>
+  </div>
+  <canvas id="gameCanvas" width="800" height="450" style="display:none;"></canvas>
+  <div id="ui" style="display:none;">Skor: <span id="score">0</span> | Rekor: <span id="highScore">0</span></div>
+  <div id="gameOver">
+    <div id="finalScore"></div>
+    <button onclick="restartGame()">Tekrar Oyna</button>
+  </div>
+
+  <!-- Mobil yön tuşları -->
+  <div id="mobileControls">
+    <div class="mobile-row">
+      <div class="mobile-btn" id="btnUp">▲</div>
+    </div>
+    <div class="mobile-row">
+      <div class="mobile-btn" id="btnLeft">◀</div>
+      <div style="width:44px;"></div>
+      <div class="mobile-btn" id="btnRight">▶</div>
+    </div>
+    <div class="mobile-row">
+      <div class="mobile-btn" id="btnDown">▼</div>
+    </div>
+  </div>
+
+  <!-- Mobil ateş tuşu -->
+  <div id="fireBtn">🔥</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const scoreEl = document.getElementById('score');
+    const highScoreEl = document.getElementById('highScore');
+    const finalScoreEl = document.getElementById('finalScore');
+    const gameOverEl = document.getElementById('gameOver');
+
+    const ninjaImg = new Image();
+    ninjaImg.src = 'image/ninja.png';
+
+    const askerImg = new Image();
+    askerImg.src = 'image/asker.png';
+
+    const zombie1Img = new Image();
+    zombie1Img.src = 'image/zombi1.png';
+
+    const zombie2Img = new Image();
+    zombie2Img.src = 'image/zombi2.png';
+
+    let ninja = { x: 100, y: 350, width: 64, height: 64, frame: 0 };
+
+    let shurikens = [];
+    let zombies = [];
+    let particles = [];
+    let score = 0;
+    let lastScore = 0;
+    let gameOver = false;
+
+    let keys = {};
+
+    let round = 1;
+    let zombiesKilled = 0;
+    let maxRounds = 5;
+    let roundThresholds = [15, 30, 50, 100];
+    let bullets = 100; // Başlangıçta 100 mermi
+    let bulletDropActive = false;
+    let bulletDrops = [];
+    let armorActive = false;
+    let armorDrops = [];
+    let armorTimeout;
+    let roundTextTimeout;
+
+    let selectedCharacter = 'ninja';
+
+    // Video ve başlatma ekranı kontrolü
+    const introVideoContainer = document.getElementById('introVideoContainer');
+    const introVideo = document.getElementById('introVideo');
+    const startScreen = document.getElementById('startScreen');
+    const startBtn = document.getElementById('startBtn');
+    const gameCanvas = document.getElementById('gameCanvas');
+    const uiDiv = document.getElementById('ui');
+    const selectNinja = document.getElementById('selectNinja');
+    const selectAsker = document.getElementById('selectAsker');
+    let introWatched = false;
+
+    function showStartScreen() {
+      introVideoContainer.style.display = 'none';
+      startScreen.style.display = 'flex';
+      introWatched = true;
+    }
+    function startGame() {
+      startScreen.style.display = 'none';
+      gameCanvas.style.display = '';
+      uiDiv.style.display = '';
+      setBackground(1);
+      showRoundText();
+      updateUI();
+      updateGame();
+    }
+    // Video otomatik başlar, 8 saniye sonra başlat ekranı gelsin
+    window.addEventListener('DOMContentLoaded', function () {
+      introVideo.play();
+      setTimeout(showStartScreen, 8000); // 8 saniye sonra otomatik geçiş
+    });
+    // Video kullanıcı tarafından geçilirse de başlat ekranı gelsin
+    introVideo.addEventListener('click', function () {
+      if (!introWatched) {
+        introVideo.pause();
+        showStartScreen();
+      }
+    });
+    // Başla butonu
+    startBtn.addEventListener('click', startGame);
+    // Space veya Enter ile başlat
+    window.addEventListener('keydown', function (e) {
+      if (startScreen.style.display === 'flex' && (e.code === 'Space' || e.code === 'Enter')) {
+        startGame();
+      }
+    });
+
+    // Karakter seçimi kutularına tıklama
+    selectNinja.addEventListener('click', function () {
+      selectedCharacter = 'ninja';
+      selectNinja.style.borderColor = 'lime';
+      selectAsker.style.borderColor = 'yellow';
+    });
+    selectAsker.addEventListener('click', function () {
+      selectedCharacter = 'asker';
+      selectAsker.style.borderColor = 'lime';
+      selectNinja.style.borderColor = 'yellow';
+    });
+    // Başlangıçta ninja seçili görünsün
+    selectNinja.style.borderColor = 'lime';
+
+    function setBackground(round) {
+      const canvas = document.getElementById('gameCanvas');
+      if (round === 1) {
+        canvas.style.backgroundImage = "url('image/arkaplan3.png')";
+      } else if (round === 2) {
+        canvas.style.backgroundImage = "url('image/arkaplan2.png')";
+      } else {
+        canvas.style.backgroundImage = "url('image/arkaplan.png')";
+      }
+    }
+
+    function showRoundText() {
+      setBackground(round); // round yazısı gösterilirken arka planı da güncelle
+      const roundDiv = document.createElement('div');
+      roundDiv.id = 'roundText';
+      roundDiv.style.position = 'absolute';
+      roundDiv.style.top = '40%';
+      roundDiv.style.left = '50%';
+      roundDiv.style.transform = 'translate(-50%, -50%)';
+      roundDiv.style.color = 'yellow';
+      roundDiv.style.fontSize = '40px';
+      roundDiv.style.fontWeight = 'bold';
+      roundDiv.style.textShadow = '2px 2px 8px #000';
+      roundDiv.textContent = `${round}. Round`;
+      document.body.appendChild(roundDiv);
+      clearTimeout(roundTextTimeout);
+      roundTextTimeout = setTimeout(() => {
+        if (roundDiv.parentNode) roundDiv.parentNode.removeChild(roundDiv);
+      }, 2000);
+    }
+
+    function updateUI() {
+      scoreEl.textContent = score;
+      highScoreEl.textContent = localStorage.getItem('highScore') || '0';
+      let bulletSpan = document.getElementById('bullets');
+      if (!bulletSpan) {
+        bulletSpan = document.createElement('span');
+        bulletSpan.id = 'bullets';
+        bulletSpan.style.marginLeft = '20px';
+        document.getElementById('ui').appendChild(bulletSpan);
+      }
+      bulletSpan.textContent = `Mermi: ${bullets}`;
+    }
+
+    function drawNinja() {
+      if (armorActive) {
+        ctx.save();
+        ctx.shadowColor = 'deepskyblue';
+        ctx.shadowBlur = 30;
+        if (selectedCharacter === 'asker') {
+          ctx.drawImage(askerImg, ninja.x, ninja.y, ninja.width, ninja.height);
+        } else {
+          ctx.drawImage(ninjaImg, ninja.x, ninja.y, ninja.width, ninja.height);
+        }
+        ctx.restore();
+      } else {
+        if (selectedCharacter === 'asker') {
+          ctx.drawImage(askerImg, ninja.x, ninja.y, ninja.width, ninja.height);
+        } else {
+          ctx.drawImage(ninjaImg, ninja.x, ninja.y, ninja.width, ninja.height);
+        }
+      }
+    }
+
+    function drawShurikens() {
+      ctx.fillStyle = 'silver';
+      shurikens.forEach(s => ctx.fillRect(s.x, s.y, 8, 8));
+    }
+
+    function drawZombies() {
+      zombies.forEach(z => {
+        const img = z.type === 1 ? zombie1Img : zombie2Img;
+        ctx.drawImage(img, z.x, z.y, z.width, z.height);
+      });
+    }
+
+    function drawParticles() {
+      particles.forEach(p => {
+        ctx.fillStyle = 'limegreen';
+        ctx.fillRect(p.x, p.y, 4, 4);
+      });
+    }
+
+    function updateParticles() {
+      particles = particles.filter(p => p.life > 0);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+      });
+    }
+
+    function spawnParticles(x, y) {
+      for (let i = 0; i < 10; i++) {
+        particles.push({
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          life: 30
+        });
+      }
+    }
+
+    function spawnBulletDrop() {
+      if (!bulletDropActive) return;
+      // Rastgele bir yere mermi kutusu bırak
+      const drop = {
+        x: Math.random() * (canvas.width - 32),
+        y: Math.random() * (canvas.height - 32),
+        size: 32,
+        collected: false
+      };
+      bulletDrops.push(drop);
+      // 5-10 saniye arası tekrar mermi kutusu bırak
+      setTimeout(spawnBulletDrop, 5000 + Math.random() * 5000);
+    }
+
+    function drawBulletDrops() {
+      bulletDrops.forEach(drop => {
+        if (!drop.collected) {
+          ctx.fillStyle = 'gold';
+          ctx.fillRect(drop.x, drop.y, drop.size, drop.size);
+          ctx.strokeStyle = 'black';
+          ctx.strokeRect(drop.x, drop.y, drop.size, drop.size);
+          ctx.fillStyle = 'black';
+          ctx.font = 'bold 18px monospace';
+          ctx.fillText('+10', drop.x + 4, drop.y + 22);
+        }
+      });
+    }
+
+    function checkBulletDropCollision() {
+      bulletDrops.forEach(drop => {
+        if (!drop.collected &&
+          ninja.x < drop.x + drop.size &&
+          ninja.x + ninja.width > drop.x &&
+          ninja.y < drop.y + drop.size &&
+          ninja.y + ninja.height > drop.y) {
+          drop.collected = true;
+          bullets += 10;
+          updateUI();
+        }
+      });
+      bulletDrops = bulletDrops.filter(drop => !drop.collected);
+    }
+
+    function spawnArmorDrop() {
+      if (!bulletDropActive) return;
+      // Çok nadir zırh kutusu bırak (yaklaşık 30-60 saniyede bir)
+      const drop = {
+        x: Math.random() * (canvas.width - 40),
+        y: Math.random() * (canvas.height - 40),
+        size: 40,
+        collected: false
+      };
+      armorDrops.push(drop);
+      setTimeout(spawnArmorDrop, 30000 + Math.random() * 30000);
+    }
+
+    function drawArmorDrops() {
+      armorDrops.forEach(drop => {
+        if (!drop.collected) {
+          ctx.fillStyle = 'deepskyblue';
+          ctx.fillRect(drop.x, drop.y, drop.size, drop.size);
+          ctx.strokeStyle = 'black';
+          ctx.strokeRect(drop.x, drop.y, drop.size, drop.size);
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 18px monospace';
+          ctx.fillText('ZIRH', drop.x + 2, drop.y + 25);
+        }
+      });
+    }
+
+    function checkArmorDropCollision() {
+      armorDrops.forEach(drop => {
+        if (!drop.collected &&
+          ninja.x < drop.x + drop.size &&
+          ninja.x + ninja.width > drop.x &&
+          ninja.y < drop.y + drop.size &&
+          ninja.y + ninja.height > drop.y) {
+          drop.collected = true;
+          armorActive = true;
+          clearTimeout(armorTimeout);
+          armorTimeout = setTimeout(() => { armorActive = false; }, 8000); // 8 saniye koruma
+        }
+      });
+      armorDrops = armorDrops.filter(drop => !drop.collected);
+    }
+
+    function updateGame() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Ninja hareket
+      if (keys['ArrowLeft']) ninja.x -= 4;
+      if (keys['ArrowRight']) ninja.x += 4;
+      if (keys['ArrowUp']) ninja.y -= 4;
+      if (keys['ArrowDown']) ninja.y += 4;
+
+      ninja.x = Math.max(0, Math.min(canvas.width - ninja.width, ninja.x));
+      ninja.y = Math.max(0, Math.min(canvas.height - ninja.height, ninja.y));
+
+      drawNinja();
+
+      shurikens = shurikens.filter(s => s.x < canvas.width);
+      shurikens.forEach(s => s.x += 10);
+      drawShurikens();
+
+      zombies.forEach(z => z.x -= z.speed);
+      drawZombies();
+
+      drawParticles();
+      updateParticles();
+
+      drawBulletDrops();
+      checkBulletDropCollision();
+
+      drawArmorDrops();
+      checkArmorDropCollision();
+
+      zombies.forEach((z, zi) => {
+        shurikens.forEach((s, si) => {
+          if (s.x < z.x + z.width && s.x + 8 > z.x &&
+            s.y < z.y + z.height && s.y + 8 > z.y) {
+            z.hp--;
+            shurikens.splice(si, 1);
+            if (z.hp <= 0) {
+              zombies.splice(zi, 1);
+              score += 5;
+              zombiesKilled++;
+              spawnParticles(z.x + z.width / 2, z.y + z.height / 2);
+              // Round kontrolü
+              if (round <= roundThresholds.length && zombiesKilled >= roundThresholds[round - 1]) {
+                round++;
+                if (round > maxRounds) {
+                  endGame();
+                  setTimeout(() => {
+                    const roundDiv = document.createElement('div');
+                    roundDiv.id = 'roundText';
+                    roundDiv.style.position = 'absolute';
+                    roundDiv.style.top = '40%';
+                    roundDiv.style.left = '50%';
+                    roundDiv.style.transform = 'translate(-50%, -50%)';
+                    roundDiv.style.color = 'yellow';
+                    roundDiv.style.fontSize = '40px';
+                    roundDiv.style.fontWeight = 'bold';
+                    roundDiv.style.textShadow = '2px 2px 8px #000';
+                    roundDiv.textContent = `Oyun Bitti!`;
+                    document.body.appendChild(roundDiv);
+                    setTimeout(() => {
+                      if (roundDiv.parentNode) roundDiv.parentNode.removeChild(roundDiv);
+                    }, 2000);
+                  }, 500);
+                  return;
+                }
+                showRoundText();
+                // Yeni roundda mermi kapasitesini artır
+                if (round === 2) {
+                  bullets = 30;
+                  bulletDropActive = true;
+                  bulletDrops = [];
+                  setTimeout(spawnBulletDrop, 3000); // 2. rounddan sonra mermi kutuları gelmeye başlasın
+                  setTimeout(spawnArmorDrop, 15000); // 2. rounddan sonra zırh kutuları gelmeye başlasın
+                } else if (round === 3) bullets = 50;
+                else if (round === 4) bullets = 100;
+                else if (round === 5) bullets = 200;
+              }
+              updateUI();
+            }
+          }
+        });
+
+        if (z.x <= ninja.x + ninja.width &&
+          z.x + z.width >= ninja.x &&
+          z.y <= ninja.y + ninja.height &&
+          z.y + z.height >= ninja.y) {
+          if (armorActive) {
+            zombies.splice(zi, 1); // Zırh varken zombi yok olur, oyuncu zarar görmez
+            armorActive = false;
+          } else {
+            endGame();
+          }
+        }
+      });
+
+      updateUI();
+      requestAnimationFrame(updateGame);
+    }
+
+    function spawnZombie() {
+      const type = Math.random() < 0.5 ? 1 : 2;
+      const minY = 0;
+      const maxY = canvas.height - 64;
+      const randomY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+      zombies.push({
+        x: canvas.width + 50,
+        y: randomY,
+        width: 64,
+        height: 64,
+        speed: type === 1 ? 2 : 1,
+        hp: type === 1 ? 1 : 2,
+        type: type
+      });
+    }
+
+    function endGame() {
+      gameOver = true;
+      gameOverEl.style.display = 'block';
+      const highScore = parseInt(localStorage.getItem('highScore') || '0');
+      if (score > highScore) {
+        localStorage.setItem('highScore', score);
+        finalScoreEl.textContent = `Yeni Rekor! Skorun: ${score}`;
+      } else {
+        finalScoreEl.textContent = `Skorun: ${score} | Rekor: ${highScore}`;
+      }
+      highScoreEl.textContent = localStorage.getItem('highScore');
+    }
+
+    function restartGame() {
+      gameOver = false;
+      zombies = [];
+      shurikens = [];
+      particles = [];
+      score = 0;
+      zombiesKilled = 0;
+      round = 1;
+      bullets = 100;
+      bulletDropActive = false;
+      bulletDrops = [];
+      armorActive = false;
+      armorDrops = [];
+      scoreEl.textContent = score;
+      gameOverEl.style.display = 'none';
+      setBackground(1);
+      updateUI();
+      showRoundText();
+      updateGame();
+      gameCanvas.style.display = '';
+      uiDiv.style.display = '';
+    }
+
+    window.addEventListener('keydown', e => {
+      keys[e.key] = true;
+      if (e.code === 'Space' && bullets > 0 && !gameOver) {
+        shurikens.push({ x: ninja.x + 20, y: ninja.y + 10 });
+        bullets--;
+        updateUI();
+      }
+    });
+
+    window.addEventListener('keyup', e => {
+      keys[e.key] = false;
+    });
+
+    // Mobil yön tuşları eventleri
+    function isMobile() {
+      return window.innerWidth < 900 || /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+    }
+    const mobileControls = document.getElementById('mobileControls');
+    if (isMobile()) {
+      mobileControls.style.display = 'flex';
+    }
+    function mobileKeyDown(dir) {
+      if (dir === 'left') keys['ArrowLeft'] = true;
+      if (dir === 'right') keys['ArrowRight'] = true;
+      if (dir === 'up') keys['ArrowUp'] = true;
+      if (dir === 'down') keys['ArrowDown'] = true;
+    }
+    function mobileKeyUp(dir) {
+      if (dir === 'left') keys['ArrowLeft'] = false;
+      if (dir === 'right') keys['ArrowRight'] = false;
+      if (dir === 'up') keys['ArrowUp'] = false;
+      if (dir === 'down') keys['ArrowDown'] = false;
+    }
+    document.getElementById('btnLeft').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('left'); });
+    document.getElementById('btnLeft').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('left'); });
+    document.getElementById('btnRight').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('right'); });
+    document.getElementById('btnRight').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('right'); });
+    document.getElementById('btnUp').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('up'); });
+    document.getElementById('btnUp').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('up'); });
+    document.getElementById('btnDown').addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('down'); });
+    document.getElementById('btnDown').addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('down'); });
+
+    // Mobil ateş tuşu eventleri
+    const fireBtn = document.getElementById('fireBtn');
+    if (isMobile()) {
+      fireBtn.style.display = 'flex';
+    }
+    function fireShuriken() {
+      if (bullets > 0 && !gameOver) {
+        shurikens.push({ x: ninja.x + 20, y: ninja.y + 10 });
+        bullets--;
+        updateUI();
+      }
+    }
+    fireBtn.addEventListener('touchstart', e => { e.preventDefault(); fireShuriken(); });
+    fireBtn.addEventListener('mousedown', e => { e.preventDefault(); fireShuriken(); });
+
+    // Mobil yön tuşları ile hareket
+    function mobileKeyDown(dir) {
+      if (dir === 'up') keys['ArrowUp'] = true;
+      if (dir === 'down') keys['ArrowDown'] = true;
+      if (dir === 'left') keys['ArrowLeft'] = true;
+      if (dir === 'right') keys['ArrowRight'] = true;
+    }
+    function mobileKeyUp(dir) {
+      if (dir === 'up') keys['ArrowUp'] = false;
+      if (dir === 'down') keys['ArrowDown'] = false;
+      if (dir === 'left') keys['ArrowLeft'] = false;
+      if (dir === 'right') keys['ArrowRight'] = false;
+    }
+    // Mobilde ise yön tuşlarını göster
+    function isMobile() {
+      return window.innerWidth <= 900;
+    }
+    function setupMobileControls() {
+      if (!isMobile()) return;
+      const btnUp = document.getElementById('btnUp');
+      const btnDown = document.getElementById('btnDown');
+      const btnLeft = document.getElementById('btnLeft');
+      const btnRight = document.getElementById('btnRight');
+      // Touch eventler
+      btnUp.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('up'); });
+      btnUp.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('up'); });
+      btnDown.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('down'); });
+      btnDown.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('down'); });
+      btnLeft.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('left'); });
+      btnLeft.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('left'); });
+      btnRight.addEventListener('touchstart', e => { e.preventDefault(); mobileKeyDown('right'); });
+      btnRight.addEventListener('touchend', e => { e.preventDefault(); mobileKeyUp('right'); });
+      // Mouse desteği (isteğe bağlı)
+      btnUp.addEventListener('mousedown', () => mobileKeyDown('up'));
+      btnUp.addEventListener('mouseup', () => mobileKeyUp('up'));
+      btnDown.addEventListener('mousedown', () => mobileKeyDown('down'));
+      btnDown.addEventListener('mouseup', () => mobileKeyUp('down'));
+      btnLeft.addEventListener('mousedown', () => mobileKeyDown('left'));
+      btnLeft.addEventListener('mouseup', () => mobileKeyUp('left'));
+      btnRight.addEventListener('mousedown', () => mobileKeyDown('right'));
+      btnRight.addEventListener('mouseup', () => mobileKeyUp('right'));
+    }
+    window.addEventListener('DOMContentLoaded', setupMobileControls);
+    window.addEventListener('resize', function () {
+      document.getElementById('mobileControls').style.display = isMobile() ? 'flex' : 'none';
+    });
+
+    highScoreEl.textContent = localStorage.getItem('highScore') || '0';
+    setInterval(spawnZombie, 1500);
+    setBackground(1); // Sayfa yüklenince ilk arka planı ayarla
+    showRoundText();
+    updateUI();
+    updateGame();
+    // Sayfa yüklenince sadece video gösterilsin, oyun başlamasın
+    gameCanvas.style.display = 'none';
+    uiDiv.style.display = 'none';
+    startScreen.style.display = 'none';
+    introVideoContainer.style.display = 'flex';
+  </script>
+</body>
+
+</html>
