@@ -315,7 +315,7 @@
       clearTimeout(roundTextTimeout);
       roundTextTimeout = setTimeout(() => {
         if (roundDiv.parentNode) roundDiv.parentNode.removeChild(roundDiv);
-      }, 2000);
+      }, 2000); // 2 saniye sonra otomatik kaybolacak
     }
 
     function updateUI() {
@@ -483,10 +483,22 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Ninja hareket
-      if (keys['ArrowLeft']) ninja.x -= 4;
-      if (keys['ArrowRight']) ninja.x += 4;
-      if (keys['ArrowUp']) ninja.y -= 4;
-      if (keys['ArrowDown']) ninja.y += 4;
+      let moveSpeed = 3; // Orta hız, biraz hızlandırıldı
+      if (keys['ArrowLeft']) ninja.x -= moveSpeed;
+      if (keys['ArrowRight']) ninja.x += moveSpeed;
+      if (keys['ArrowUp']) ninja.y -= moveSpeed;
+      if (keys['ArrowDown']) ninja.y += moveSpeed;
+
+      // Mobilde dokunulan yere gitme
+      if (window.isMobileTouchMove && window.mobileTarget) {
+        const dx = window.mobileTarget.x - (ninja.x + ninja.width / 2);
+        const dy = window.mobileTarget.y - (ninja.y + ninja.height / 2);
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 6) {
+          ninja.x += (dx / dist) * moveSpeed;
+          ninja.y += (dy / dist) * moveSpeed;
+        }
+      }
 
       ninja.x = Math.max(0, Math.min(canvas.width - ninja.width, ninja.x));
       ninja.y = Math.max(0, Math.min(canvas.height - ninja.height, ninja.y));
@@ -733,6 +745,58 @@
     window.addEventListener('resize', function () {
       document.getElementById('mobileControls').style.display = isMobile() ? 'flex' : 'none';
     });
+
+    // Mobil dokunmatik hareket
+    window.isMobileTouchMove = false;
+    window.mobileTarget = null;
+    canvas.addEventListener('touchstart', e => {
+      e.preventDefault();
+      window.isMobileTouchMove = true;
+      const touch = e.touches[0];
+      window.mobileTarget = { x: touch.clientX, y: touch.clientY };
+    });
+    canvas.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      window.mobileTarget = { x: touch.clientX, y: touch.clientY };
+    });
+    canvas.addEventListener('touchend', e => {
+      e.preventDefault();
+      window.isMobileTouchMove = false;
+      window.mobileTarget = null;
+    });
+
+    // Mobilde dokunulan yere gitme için eventler
+    window.isMobileTouchMove = false;
+    window.mobileTarget = null;
+    function setupMobileTouchMove() {
+      if (!isMobile()) return;
+      const canvas = document.getElementById('gameCanvas');
+      canvas.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 0) {
+          const rect = canvas.getBoundingClientRect();
+          window.isMobileTouchMove = true;
+          window.mobileTarget = {
+            x: (e.touches[0].clientX - rect.left) * (canvas.width / rect.width),
+            y: (e.touches[0].clientY - rect.top) * (canvas.height / rect.height)
+          };
+        }
+      });
+      canvas.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 0) {
+          const rect = canvas.getBoundingClientRect();
+          window.mobileTarget = {
+            x: (e.touches[0].clientX - rect.left) * (canvas.width / rect.width),
+            y: (e.touches[0].clientY - rect.top) * (canvas.height / rect.height)
+          };
+        }
+      });
+      canvas.addEventListener('touchend', function(e) {
+        window.isMobileTouchMove = false;
+        window.mobileTarget = null;
+      });
+    }
+    window.addEventListener('DOMContentLoaded', setupMobileTouchMove);
 
     highScoreEl.textContent = localStorage.getItem('highScore') || '0';
     setInterval(spawnZombie, 1500);
