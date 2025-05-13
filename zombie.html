@@ -102,7 +102,6 @@
     const zombie2Img = new Image();
     zombie2Img.src = 'image/zombi2.png';
 
-    let ninja = { x: 100, y: 350, width: 64, height: 64, frame: 0, frameTick: 0 };
     let shurikens = [];
     let zombies = [];
     let particles = [];
@@ -115,18 +114,23 @@
     let round = 1;
     let zombiesKilled = 0;
     let maxRounds = 5;
-    let roundThresholds = [15, 30, 50, 100];
-    let bullets = 100; // Başlangıçta 100 mermi
+    let roundThresholds = [5, 30, 40, 50]; // 1. rounddan 2. rounda 5 zombi öldürünce geçiş
+    let bullets = Infinity; // Mermi sınırsız
     let bulletDropActive = false;
     let bulletDrops = [];
     let armorActive = false;
     let armorDrops = [];
     let armorTimeout;
     let roundTextTimeout;
-    let roundTextShown = false;
-    let lives = 1; // Başlangıçta 1 can
 
     let selectedCharacter = 'ninja';
+
+    // --- Sabit sağa mermi, power-up ve hasar sistemi için değişkenler ---
+    let doubleShotActive = false;
+    let doubleShotTimeout;
+    let powerUp = null;
+    let normalBulletDamage = 70; // 3 vuruşta öldürmek için
+    let doubleBulletDamage = 100; // 2 vuruşta öldürmek için
 
     // Video ve başlatma ekranı kontrolü
     const introVideoContainer = document.getElementById('introVideoContainer');
@@ -140,21 +144,37 @@
     let introWatched = false;
     let firstGameStarted = false;
 
+    // Karakter seçme ekranı sadece ilk oyunda gelsin, sonrasında localStorage ile kontrol
+    let characterSelectShown = localStorage.getItem('characterSelectShown') === '1';
+
     function showStartScreen() {
       introVideoContainer.style.display = 'none';
-      startScreen.style.display = 'flex';
-      introWatched = true;
+      // Eğer karakter seçme ekranı daha önce gösterildiyse, direkt oyuna başla
+      if (characterSelectShown) {
+        startGame();
+      } else {
+        startScreen.style.display = 'flex';
+        introWatched = true;
+      }
     }
+
     function startGame() {
       startScreen.style.display = 'none';
       gameCanvas.style.display = '';
       uiDiv.style.display = '';
       setBackground(1);
-      roundTextShown = false; // Sadece ilk başlatmada gösterilsin
       showRoundText();
       updateUI();
       updateGame();
       firstGameStarted = true;
+      doubleShotActive = false;
+      powerUp = null;
+      clearTimeout(doubleShotTimeout);
+      // Karakter seçme ekranı bir daha gelmesin
+      if (!characterSelectShown) {
+        localStorage.setItem('characterSelectShown', '1');
+        characterSelectShown = true;
+      }
     }
     // Video otomatik başlar, 8 saniye sonra başlat ekranı gelsin
     window.addEventListener('DOMContentLoaded', function () {
@@ -203,8 +223,7 @@
     }
 
     function showRoundText() {
-      if (roundTextShown) return;
-      setBackground(round); // round yazısı gösterilirken arka planı da güncelle
+      setBackground(round);
       const roundDiv = document.createElement('div');
       roundDiv.id = 'roundText';
       roundDiv.style.position = 'absolute';
@@ -221,7 +240,6 @@
       roundTextTimeout = setTimeout(() => {
         if (roundDiv.parentNode) roundDiv.parentNode.removeChild(roundDiv);
       }, 2000); // 2 saniye sonra otomatik kaybolacak
-      roundTextShown = true;
     }
 
     function updateUI() {
@@ -234,7 +252,7 @@
         bulletSpan.style.marginLeft = '20px';
         document.getElementById('ui').appendChild(bulletSpan);
       }
-      bulletSpan.textContent = `Mermi: ${bullets}`;
+      bulletSpan.textContent = `Mermi: ∞`;
       // Can barı
       let livesBar = document.getElementById('livesBar');
       if (!livesBar) {
@@ -243,33 +261,60 @@
         livesBar.style.marginLeft = '20px';
         document.getElementById('ui').appendChild(livesBar);
       }
-      let heart = '❤️';
-      livesBar.textContent = `Can: ${heart.repeat(lives)}`;
-    }
-
-    function drawNinja() {
-      let img = selectedCharacter === 'asker' ? askerImg : ninjaImg;
-      // Yürüme efekti: hareket ediyorsa yukarı-aşağı 6px sallan
-      let offsetY = ninja.moving ? Math.sin(Date.now() / 120) * 6 : 0;
-      ctx.save();
-      if (armorActive) {
-        ctx.shadowColor = 'deepskyblue';
-        ctx.shadowBlur = 30;
+      livesBar.textContent = `Can: ${player.health}/100`;
+      let coinSpan = document.getElementById('coins');
+      if (!coinSpan) {
+        coinSpan = document.createElement('span');
+        coinSpan.id = 'coins';
+        coinSpan.style.marginLeft = '20px';
+        document.getElementById('ui').appendChild(coinSpan);
       }
-      ctx.drawImage(img, ninja.x, ninja.y + offsetY, ninja.width, ninja.height);
-      ctx.restore();
+      let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+      coinSpan.textContent = `Jeton: ${savedCoins}`;
     }
 
-    function drawShurikens() {
-      ctx.fillStyle = 'silver';
-      shurikens.forEach(s => ctx.fillRect(s.x, s.y, 8, 8));
+    let player = {
+      x: 100,
+      y: 350,
+      width: 64,
+      height: 64,
+      vy: 0,
+      onGround: true,
+      health: 100,
+      coins: 0
+    };
+
+    function drawPlayer() {
+      let img = selectedCharacter === 'asker' ? askerImg : ninjaImg;
+      ctx.save();
+      ctx.drawImage(img, player.x, player.y, player.width, player.height);
+      // Can barı
+      ctx.fillStyle = 'red';
+      ctx.fillRect(player.x, player.y - 16, player.width, 8);
+      ctx.fillStyle = 'lime';
+      ctx.fillRect(player.x, player.y - 16, player.width * (player.health / 100), 8);
+      ctx.strokeStyle = '#222';
+      ctx.strokeRect(player.x, player.y - 16, player.width, 8);
+      ctx.restore();
     }
 
     function drawZombies() {
       zombies.forEach(z => {
         const img = z.type === 1 ? zombie1Img : zombie2Img;
         ctx.drawImage(img, z.x, z.y, z.width, z.height);
+        // Zombi can barı
+        ctx.fillStyle = 'red';
+        ctx.fillRect(z.x, z.y - 12, z.width, 6);
+        ctx.fillStyle = 'lime';
+        ctx.fillRect(z.x, z.y - 12, z.width * (z.hp / z.maxHp), 6);
+        ctx.strokeStyle = '#222';
+        ctx.strokeRect(z.x, z.y - 12, z.width, 6);
       });
+    }
+
+    function drawShurikens() {
+      ctx.fillStyle = 'silver';
+      shurikens.forEach(s => ctx.fillRect(s.x, s.y, 8, 8));
     }
 
     function drawParticles() {
@@ -300,155 +345,80 @@
       }
     }
 
-    function spawnBulletDrop() {
-      if (!bulletDropActive) return;
-      // Rastgele bir yere mermi kutusu bırak
-      const drop = {
-        x: Math.random() * (canvas.width - 32),
-        y: Math.random() * (canvas.height - 32),
-        size: 32,
-        collected: false
-      };
-      bulletDrops.push(drop);
-      // 5-10 saniye arası tekrar mermi kutusu bırak
-      setTimeout(spawnBulletDrop, 5000 + Math.random() * 5000);
-    }
-
-    function drawBulletDrops() {
-      bulletDrops.forEach(drop => {
-        if (!drop.collected) {
-          ctx.fillStyle = 'gold';
-          ctx.fillRect(drop.x, drop.y, drop.size, drop.size);
-          ctx.strokeStyle = 'black';
-          ctx.strokeRect(drop.x, drop.y, drop.size, drop.size);
-          ctx.fillStyle = 'black';
-          ctx.font = 'bold 18px monospace';
-          ctx.fillText('+10', drop.x + 4, drop.y + 22);
-        }
-      });
-    }
-
-    function checkBulletDropCollision() {
-      bulletDrops.forEach(drop => {
-        if (!drop.collected &&
-          ninja.x < drop.x + drop.size &&
-          ninja.x + ninja.width > drop.x &&
-          ninja.y < drop.y + drop.size &&
-          ninja.y + ninja.height > drop.y) {
-          drop.collected = true;
-          bullets += 10;
-          updateUI();
-        }
-      });
-      bulletDrops = bulletDrops.filter(drop => !drop.collected);
-    }
-
-    function spawnArmorDrop() {
-      if (!bulletDropActive) return;
-      // Çok nadir zırh kutusu bırak (yaklaşık 30-60 saniyede bir)
-      const drop = {
-        x: Math.random() * (canvas.width - 40),
-        y: Math.random() * (canvas.height - 40),
-        size: 40,
-        collected: false
-      };
-      armorDrops.push(drop);
-      setTimeout(spawnArmorDrop, 30000 + Math.random() * 30000);
-    }
-
-    function drawArmorDrops() {
-      armorDrops.forEach(drop => {
-        if (!drop.collected) {
-          ctx.fillStyle = 'deepskyblue';
-          ctx.fillRect(drop.x, drop.y, drop.size, drop.size);
-          ctx.strokeStyle = 'black';
-          ctx.strokeRect(drop.x, drop.y, drop.size, drop.size);
-          ctx.fillStyle = 'white';
-          ctx.font = 'bold 18px monospace';
-          ctx.fillText('ZIRH', drop.x + 2, drop.y + 25);
-        }
-      });
-    }
-
-    function checkArmorDropCollision() {
-      armorDrops.forEach(drop => {
-        if (!drop.collected &&
-          ninja.x < drop.x + drop.size &&
-          ninja.x + ninja.width > drop.x &&
-          ninja.y < drop.y + drop.size &&
-          ninja.y + ninja.height > drop.y) {
-          drop.collected = true;
-          armorActive = true;
-          clearTimeout(armorTimeout);
-          armorTimeout = setTimeout(() => { armorActive = false; }, 8000); // 8 saniye koruma
-        }
-      });
-      armorDrops = armorDrops.filter(drop => !drop.collected);
-    }
+    let mouse = { x: 0, y: 0 };
+    canvas.addEventListener('mousemove', function (e) {
+      const rect = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - rect.left;
+      mouse.y = e.clientY - rect.top;
+    });
 
     function updateGame() {
       if (gameOver) return;
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Ninja hareket
-      let moveSpeed = 3; // Sabit hız
-      let moving = false;
-      if (keys['ArrowLeft']) { ninja.x -= moveSpeed; moving = true; }
-      if (keys['ArrowRight']) { ninja.x += moveSpeed; moving = true; }
-      if (keys['ArrowUp']) { ninja.y -= moveSpeed; moving = true; }
-      if (keys['ArrowDown']) { ninja.y += moveSpeed; moving = true; }
-
-      // Mobilde dokunulan yere gitme
-      if (window.isMobileTouchMove && window.mobileTarget) {
-        const dx = window.mobileTarget.x - (ninja.x + ninja.width / 2);
-        const dy = window.mobileTarget.y - (ninja.y + ninja.height / 2);
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 6) {
-          ninja.x += (dx / dist) * moveSpeed;
-          ninja.y += (dy / dist) * moveSpeed;
-          moving = true;
-        }
-      }
-
-      ninja.x = Math.max(0, Math.min(canvas.width - ninja.width, ninja.x));
-      ninja.y = Math.max(0, Math.min(canvas.height - ninja.height, ninja.y));
-      ninja.moving = moving;
-
-      drawNinja();
-
-      shurikens = shurikens.filter(s => s.x < canvas.width);
-      shurikens.forEach(s => s.x += 10);
+      // Karakter hareketi: yukarı-aşağı-sağa-sola
+      let moveSpeed = 4;
+      if (keys['ArrowUp']) player.y -= moveSpeed;
+      if (keys['ArrowDown']) player.y += moveSpeed;
+      if (keys['ArrowLeft']) player.x -= moveSpeed;
+      if (keys['ArrowRight']) player.x += moveSpeed;
+      if (player.y < 0) player.y = 0;
+      if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
+      if (player.x < 0) player.x = 0;
+      if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
+      drawPlayer();
+      // Mermileri hareket ettir
+      shurikens.forEach(s => {
+        s.x += s.vx;
+        s.y += s.vy;
+      });
+      shurikens = shurikens.filter(s => s.x > -10 && s.x < canvas.width + 10 && s.y > -10 && s.y < canvas.height + 10);
       drawShurikens();
-
-      zombies.forEach(z => z.x -= z.speed);
+      // Zombiler round'a göre
+      if (round < 3) {
+        zombies.forEach(z => {
+          z.x -= z.speed;
+          // Oyuncunun y'sine yaklaşsın
+          if (z.y < player.y) z.y += 1.5;
+          else if (z.y > player.y) z.y -= 1.5;
+        });
+      } else {
+        // Her yerden gelen zombiler (oyuncuya yaklaşır)
+        zombies.forEach(z => {
+          let dx = player.x - z.x;
+          let dy = player.y - z.y;
+          let dist = Math.sqrt(dx * dx + dy * dy);
+          z.x += (dx / dist) * z.speed;
+          z.y += (dy / dist) * z.speed;
+        });
+      }
       drawZombies();
-
       drawParticles();
       updateParticles();
-
-      drawBulletDrops();
-      checkBulletDropCollision();
-
-      drawArmorDrops();
-      checkArmorDropCollision();
-
+      drawPowerUp();
+      checkPowerUpCollect();
       zombies.forEach((z, zi) => {
         shurikens.forEach((s, si) => {
-          if (s.x < z.x + z.width && s.x + 8 > z.x &&
-            s.y < z.y + z.height && s.y + 8 > z.y) {
-            z.hp--;
+          if (
+            s.x < z.x + z.width &&
+            s.x + 8 > z.x &&
+            s.y < z.y + z.height &&
+            s.y + 8 > z.y
+          ) {
+            let damage = doubleShotActive ? doubleBulletDamage : normalBulletDamage;
+            z.hp -= damage;
             shurikens.splice(si, 1);
             if (z.hp <= 0) {
               zombies.splice(zi, 1);
               score += 5;
               zombiesKilled++;
-              // Her 7 zombi öldürünce can ver
-              if (zombiesKilled % 7 === 0) {
-                lives++;
+              // Power-up: Her 6 zombi öldürünce tekrar gelsin
+              if (zombiesKilled % 6 === 0 && (!powerUp || !powerUp.active) && !doubleShotActive) {
+                spawnPowerUp();
               }
+              let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+              savedCoins++;
+              localStorage.setItem('coins', savedCoins);
               spawnParticles(z.x + z.width / 2, z.y + z.height / 2);
-              // Round kontrolü
               if (round <= roundThresholds.length && zombiesKilled >= roundThresholds[round - 1]) {
                 round++;
                 if (round > maxRounds) {
@@ -473,37 +443,32 @@
                   return;
                 }
                 showRoundText();
-                // Yeni roundda mermi kapasitesini artır
                 if (round === 2) {
-                  bullets = 30;
                   bulletDropActive = true;
                   bulletDrops = [];
-                  setTimeout(spawnBulletDrop, 3000); // 2. rounddan sonra mermi kutuları gelmeye başlasın
-                  setTimeout(spawnArmorDrop, 15000); // 2. rounddan sonra zırh kutuları gelmeye başlasın
-                } else if (round === 3) bullets = 50;
-                else if (round === 4) bullets = 100;
-                else if (round === 5) bullets = 200;
+                  setTimeout(spawnBulletDrop, 3000);
+                  setTimeout(spawnArmorDrop, 15000);
+                }
               }
               updateUI();
             }
           }
         });
 
-        if (z.x <= ninja.x + ninja.width &&
-          z.x + z.width >= ninja.x &&
-          z.y <= ninja.y + ninja.height &&
-          z.y + z.height >= ninja.y) {
+        if (z.x <= player.x + player.width &&
+          z.x + z.width >= player.x &&
+          z.y <= player.y + player.height &&
+          z.y + z.height >= player.y) {
           if (armorActive) {
-            zombies.splice(zi, 1); // Zırh varken zombi yok olur, oyuncu zarar görmez
+            zombies.splice(zi, 1);
             armorActive = false;
           } else {
-            // Can sistemi: can varsa bir azalt, yoksa oyun bitir
-            if (lives > 1) {
-              lives--;
-              zombies.splice(zi, 1);
-            } else {
-              endGame();
-            }
+            let damage = z.type === 1 ? 30 : 20;
+            player.health -= damage;
+            if (player.health < 0) player.health = 0;
+            player.coins += 1;
+            zombies.splice(zi, 1);
+            if (player.health <= 0) endGame();
             updateUI();
           }
         }
@@ -515,18 +480,81 @@
 
     function spawnZombie() {
       const type = Math.random() < 0.5 ? 1 : 2;
-      const minY = 0;
-      const maxY = canvas.height - 64;
-      const randomY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
-      zombies.push({
-        x: canvas.width + 50,
-        y: randomY,
-        width: 64,
-        height: 64,
-        speed: type === 1 ? 2 : 1,
-        hp: type === 1 ? 1 : 2,
-        type: type
-      });
+      let hp = 200;
+      let maxHp = hp;
+      // Zombi hızı sabit: 2.5 (her round)
+      let zombieSpeed = 2.5;
+      if (round < 3) {
+        let zy = Math.random() * (canvas.height - 64);
+        zombies.push({
+          x: canvas.width + 64,
+          y: zy,
+          width: 64,
+          height: 64,
+          speed: zombieSpeed,
+          hp: hp,
+          maxHp: maxHp,
+          type: type
+        });
+      } else {
+        let spawnEdge = Math.floor(Math.random() * 4);
+        let zx, zy;
+        if (spawnEdge === 0) { zx = -64; zy = Math.random() * (canvas.height - 64); }
+        else if (spawnEdge === 1) { zx = canvas.width + 64; zy = Math.random() * (canvas.height - 64); }
+        else if (spawnEdge === 2) { zx = Math.random() * (canvas.width - 64); zy = -64; }
+        else { zx = Math.random() * (canvas.width - 64); zy = canvas.height + 64; }
+        zombies.push({
+          x: zx,
+          y: zy,
+          width: 64,
+          height: 64,
+          speed: zombieSpeed,
+          hp: hp,
+          maxHp: maxHp,
+          type: type
+        });
+      }
+    }
+
+    function spawnPowerUp() {
+      powerUp = {
+        x: Math.random() * (canvas.width - 40) + 20,
+        y: Math.random() * (canvas.height - 40) + 20,
+        size: 32,
+        active: true
+      };
+    }
+
+    function drawPowerUp() {
+      if (powerUp && powerUp.active) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(powerUp.x, powerUp.y, powerUp.size / 2, 0, 2 * Math.PI);
+        ctx.fillStyle = 'gold';
+        ctx.shadowColor = 'yellow';
+        ctx.shadowBlur = 20;
+        ctx.fill();
+        ctx.restore();
+        ctx.font = '16px monospace';
+        ctx.fillStyle = 'black';
+        ctx.fillText('2x', powerUp.x - 12, powerUp.y + 6);
+      }
+    }
+
+    function checkPowerUpCollect() {
+      if (powerUp && powerUp.active) {
+        let px = player.x + player.width / 2;
+        let py = player.y + player.height / 2;
+        let dist = Math.sqrt((powerUp.x - px) ** 2 + (powerUp.y - py) ** 2);
+        if (dist < player.width / 2 + powerUp.size / 2) {
+          powerUp.active = false;
+          doubleShotActive = true;
+          clearTimeout(doubleShotTimeout);
+          doubleShotTimeout = setTimeout(() => {
+            doubleShotActive = false;
+          }, 5000); // 5 saniye aktif
+        }
+      }
     }
 
     function endGame() {
@@ -550,32 +578,54 @@
       score = 0;
       zombiesKilled = 0;
       round = 1;
-      bullets = 100;
       bulletDropActive = false;
       bulletDrops = [];
       armorActive = false;
       armorDrops = [];
-      lives = 1; // Canı sıfırla
+      player.x = 100;
+      player.health = 100;
+      player.coins = 0;
       scoreEl.textContent = score;
       gameOverEl.style.display = 'none';
       setBackground(1);
       updateUI();
-      roundTextShown = false; // Sadece ilk başlatmada gösterilsin, restartta tekrar gösterilmesin
       updateGame();
       gameCanvas.style.display = '';
       uiDiv.style.display = '';
-      // Karakter seçme ve video ekranı asla gelmesin
       if (firstGameStarted) {
         startScreen.style.display = 'none';
         introVideoContainer.style.display = 'none';
       }
+      doubleShotActive = false;
+      powerUp = null;
+      clearTimeout(doubleShotTimeout);
     }
 
     window.addEventListener('keydown', e => {
       keys[e.key] = true;
-      if (e.code === 'Space' && bullets > 0 && !gameOver) {
-        shurikens.push({ x: ninja.x + 20, y: ninja.y + 10 });
-        bullets--;
+      if ((e.code === 'Space' || e.key === ' ') && !gameOver) {
+        let speed = 12;
+        if (doubleShotActive) {
+          shurikens.push({
+            x: player.x + player.width / 2,
+            y: player.y + player.height / 2,
+            vx: speed,
+            vy: 0
+          });
+          shurikens.push({
+            x: player.x + player.width / 2,
+            y: player.y + player.height / 2,
+            vx: speed,
+            vy: -3
+          });
+        } else {
+          shurikens.push({
+            x: player.x + player.width / 2,
+            y: player.y + player.height / 2,
+            vx: speed,
+            vy: 0
+          });
+        }
         updateUI();
       }
     });
@@ -584,28 +634,45 @@
       keys[e.key] = false;
     });
 
-    // Mobil yön ve ateş tuşlarını tamamen kaldır
     const mobileControls = document.getElementById('mobileControls');
     const fireBtn = document.getElementById('fireBtn');
     if (mobileControls) mobileControls.style.display = 'none';
     if (fireBtn) fireBtn.style.display = 'none';
 
-    // Mobilde ekrana tıklayınca ateş et
     canvas.addEventListener('touchstart', function (e) {
-      if (bullets > 0 && !gameOver && gameCanvas.style.display !== 'none') {
-        shurikens.push({ x: ninja.x + 20, y: ninja.y + 10 });
-        bullets--;
+      if (!gameOver && gameCanvas.style.display !== 'none') {
+        let speed = 12;
+        if (doubleShotActive) {
+          shurikens.push({
+            x: player.x + player.width / 2,
+            y: player.y + player.height / 2,
+            vx: speed,
+            vy: 0
+          });
+          shurikens.push({
+            x: player.x + player.width / 2,
+            y: player.y + player.height / 2,
+            vx: speed,
+            vy: -3
+          });
+        } else {
+          shurikens.push({
+            x: player.x + player.width / 2,
+            y: player.y + player.height / 2,
+            vx: speed,
+            vy: 0
+          });
+        }
         updateUI();
       }
     });
 
     highScoreEl.textContent = localStorage.getItem('highScore') || '0';
     setInterval(spawnZombie, 1500);
-    setBackground(1); // Sayfa yüklenince ilk arka planı ayarla
+    setBackground(1);
     showRoundText();
     updateUI();
     updateGame();
-    // Sayfa yüklenince sadece video gösterilsin, oyun başlamasın
     gameCanvas.style.display = 'none';
     uiDiv.style.display = 'none';
     startScreen.style.display = 'none';
