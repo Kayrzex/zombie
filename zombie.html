@@ -48,14 +48,7 @@
   </style>
 </head>
 
-<body>
-  <div id="introVideoContainer"
-    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:1000;background:#000;display:flex;align-items:center;justify-content:center;">
-    <video id="introVideo" width="800" height="450" autoplay muted>
-      <source src="image/kısa.mp4" type="video/mp4">
-      Tarayıcınız video etiketini desteklemiyor.
-    </video>
-  </div>
+<body> <!-- Ana menü yeni menü sisteminde olacak -->
   <div id="startScreen"
     style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;flex-direction:column;">
     <h1 style="color:yellow;font-size:48px;text-shadow:2px 2px 8px #000;">Ninja Zombi Savunması</h1>
@@ -73,15 +66,256 @@
     </div>
     <button id="startBtn" style="font-size:32px;padding:16px 40px;margin-top:32px;">Başla</button>
     <p style="color:white;font-size:20px;margin-top:16px;">Başlamak için Space veya Enter'a da basabilirsin</p>
-  </div>
-  <canvas id="gameCanvas" width="800" height="450" style="display:none;"></canvas>
+  </div><canvas id="gameCanvas" width="1200" height="700" style="display:none;"></canvas>
   <div id="ui" style="display:none;">Skor: <span id="score">0</span> | Rekor: <span id="highScore">0</span></div>
   <div id="gameOver">
     <div id="finalScore"></div>
-    <button onclick="restartGame()">Tekrar Oyna</button>
+    <div style="display:flex;gap:20px;margin-top:20px;justify-content:center;">
+      <button onclick="restartGame()">Tekrar Oyna</button>
+      <button onclick="backToMainMenu()">Ana Menüye Dön</button>
+    </div>
   </div>
+  <div id="pauseScreen"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;flex-direction:column;">
+    <h1 style="color:yellow;font-size:48px;text-shadow:2px 2px 8px #000;">OYUN DURAKLATILDI</h1>
+    <div style="color:white;font-size:24px;margin-top:20px;">ESC ile devam et</div>
+
+    <div style="display:flex;gap:20px;margin-top:30px;">
+      <button id="resumeBtn"
+        style="font-size:20px;padding:12px 24px;background:lime;color:black;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">Devam
+        Et</button>
+      <button id="backToMenuBtn"
+        style="font-size:20px;padding:12px 24px;background:red;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;"
+        onclick="showMainMenuFromPause()">Ana Menüye Dön</button>
+    </div>
+
+    <div style="color:white;font-size:18px;margin-top:40px;">
+      <div>Kontroller:</div>
+      <div style="margin-top:10px;">🏹 SPACE - Ateş et</div>
+      <div>⬅️➡️⬆️⬇️ / WASD - Hareket</div>
+      <div>1-4 - Silah değiştir</div>
+      <div>M - Mağaza</div>
+      <div>ESC - Duraklat/Devam</div>
+    </div>
+  </div>
+  <div id="shopScreen"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;background:rgba(0,0,0,0.9);display:none;align-items:center;justify-content:center;flex-direction:column;">
+    <h1 style="color:yellow;font-size:48px;text-shadow:2px 2px 8px #000;">MAĞAZA</h1>
+    <div style="color:white;font-size:24px;margin-bottom:20px;">Jeton: <span id="shopCoins">0</span></div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:30px;max-width:1200px;">
+      <!-- Silah Satın Alma -->
+      <div style="background:rgba(100,0,0,0.8);padding:20px;border-radius:10px;border:2px solid red;">
+        <h3 style="color:red;margin-top:0;">🔫 Silahlar</h3>
+        <div id="buyRifle" style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Tüfek (75 Jeton)</div>
+          <div style="color:gray;font-size:14px;" id="rifleStatus">Satın alınmadı</div>
+        </div>
+        <div id="buyShotgun" style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Pompalı (100 Jeton)</div>
+          <div style="color:gray;font-size:14px;" id="shotgunStatus">Satın alınmadı</div>
+        </div>
+        <div id="buyLaser" style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Lazer (150 Jeton)</div>
+          <div style="color:gray;font-size:14px;" id="laserStatus">Satın alınmadı</div>
+        </div>
+        <div id="buyArmor" style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">🛡️ Zırh (40 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Zombi saldırısından korunur</div>
+          <div style="color:orange;font-size:12px;" id="armorStatus">Sahip değilsin</div>
+        </div>
+      </div>
+
+      <!-- Silah Yükseltmeleri -->
+      <div style="background:rgba(0,50,100,0.8);padding:20px;border-radius:10px;border:2px solid cyan;">
+        <h3 style="color:cyan;margin-top:0;">⚡ Silah Yükseltmeleri</h3>
+        <div id="pistolUpgrade"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Tabanca Hasarı +10 (50 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Mevcut: <span id="pistolDamage">70</span></div>
+        </div>
+        <div id="rifleUpgrade"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Tüfek Hasarı +15 (80 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Mevcut: <span id="rifleDamage">120</span></div>
+        </div>
+        <div id="shotgunUpgrade"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Pompalı Hasarı +20 (100 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Mevcut: <span id="shotgunDamage">200</span></div>
+        </div>
+        <div id="laserUpgrade"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Lazer Hasarı +18 (120 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Mevcut: <span id="laserDamage">150</span></div>
+        </div>
+      </div> <!-- Özel Güçlendirmeler -->
+      <div style="background:rgba(100,50,0,0.8);padding:20px;border-radius:10px;border:2px solid orange;">
+        <h3 style="color:orange;margin-top:0;">💪 Güçlendirmeler</h3>
+        <div id="healthUpgrade"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Maksimum Can +50 (60 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Mevcut: <span id="maxHealthDisplay">100</span></div>
+        </div>
+        <div id="speedUpgrade"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Hareket Hızı +0.5 (70 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Mevcut: <span id="speedDisplay">2.5</span></div>
+        </div>
+        <div id="rapidFireUpgrade"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Hızlı Ateş (-50ms) (90 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Tüm silahlar daha hızlı ateş eder</div>
+        </div>
+        <div id="luckyShot" style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">Şanslı Atış %20 (150 Jeton)</div>
+          <div style="color:gray;font-size:14px;">%20 şansla 2x hasar</div>
+        </div>
+      </div>
+
+      <!-- YENİ: ÖZEL YETENEKLER -->
+      <div style="background:rgba(75,0,130,0.8);padding:20px;border-radius:10px;border:2px solid purple;">
+        <h3 style="color:purple;margin-top:0;">🔮 Özel Yetenekler</h3>
+        <div style="color:white;font-size:12px;margin-bottom:10px;">Bu yetenekler oyun içinde Q,E,R,T tuşları ile
+          kullanılır</div>
+        <div style="margin:10px 0;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">🏃‍♂️ Dash (Q tuşu) - ÜCRETSİZ</div>
+          <div style="color:gray;font-size:14px;">Hızla ışınlanma, 3 saniye cooldown</div>
+        </div>
+        <div style="margin:10px 0;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">⚡ Şimşek (E tuşu) - 20 Jeton</div>
+          <div style="color:gray;font-size:14px;">5 zombiye şimşek çarpar, 8 saniye cooldown</div>
+        </div>
+        <div style="margin:10px 0;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">🌪️ Tornado (R tuşu) - 35 Jeton</div>
+          <div style="color:gray;font-size:14px;">Etrafındaki zombileri savurur, 12 saniye cooldown</div>
+        </div>
+        <div style="margin:10px 0;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:white;">🔥 Ateştopları (T tuşu) - 15 Jeton</div>
+          <div style="color:gray;font-size:14px;">3 ateştopru fırlatır, 6 saniye cooldown</div>
+        </div>
+      </div>
+
+      <!-- YENİ: EFSANEVI ÖĞELER -->
+      <div style="background:rgba(255,215,0,0.8);padding:20px;border-radius:10px;border:2px solid gold;">
+        <h3 style="color:black;margin-top:0;">✨ Efsanevi Öğeler</h3>
+        <div id="buyTalisman"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:black;">🧿 Bereket Tılsımı (500 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Tüm kazançlar %50 artar (Kalıcı)</div>
+        </div>
+        <div id="buyLegendaryWeapon"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:black;">⚔️ Efsanevi Silah (800 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Plasma Cannon - Süper güçlü silah</div>
+        </div>
+        <div id="buyNinjaCostume"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:black;">👘 Ninja Kostümü (300 Jeton)</div>
+          <div style="color:gray;font-size:14px;">%20 daha hızlı hareket (Kalıcı)</div>
+        </div>
+        <div id="buyMagicSpell"
+          style="margin:10px 0;cursor:pointer;padding:10px;border:1px solid gray;border-radius:5px;">
+          <div style="color:black;">📜 Büyülü Parşömen (400 Jeton)</div>
+          <div style="color:gray;font-size:14px;">Ölümde %50 can ile diriliş (Tek kullanım)</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;">
+      <button id="closeShop"
+        style="font-size:24px;padding:12px 30px;background:#444;color:white;border:none;border-radius:5px;cursor:pointer;">Çık
+        (M)</button>
+    </div>
+  </div>
+  <div id="healthPackOffer"
+    style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;flex-direction:column;">
+    <div style="background:rgba(0,100,0,0.9);padding:30px;border-radius:15px;border:3px solid lime;text-align:center;">
+      <div style="color:white;font-size:32px;margin-bottom:20px;">❤️ CAN PAKETİ!</div>
+      <div style="color:white;font-size:20px;margin-bottom:20px;">Canını tamamen yenilemek ister misin?</div>
+      <div style="color:yellow;font-size:24px;margin-bottom:25px;">💰 15 Jeton</div>
+      <div style="display:flex;gap:20px;justify-content:center;">
+        <button id="buyHealthPack"
+          style="font-size:20px;padding:12px 25px;background:lime;color:black;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">EVET</button>
+        <button id="rejectHealthPack"
+          style="font-size:20px;padding:12px 25px;background:red;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">HAYIR</button>
+      </div>
+    </div>
+  </div>
+  <!-- Yeni dosyaları dahil et -->
+  <script src="sounds.js"></script>
+  <script src="enemies.js"></script>
+  <script src="weapons.js"></script>
+  <script src="achievements.js"></script>
+  <script src="skilltree.js"></script>
+  <script src="menu.js"></script>
+  <script src="missions.js"></script>
 
   <script>
+    // Hata yakalama
+    window.addEventListener('error', function (e) {
+      console.error('Oyun hatası:', e.error);
+      alert('Oyun hatası: ' + e.message);
+    });    // Yeni sistemleri başlat
+    let soundManager = new SoundManager();
+    let synthSounds = new SynthSounds();
+
+    // Yeni ses efektleri ekle
+    if (synthSounds) {
+      synthSounds.dashSound = function () {
+        if (this.audioContext && soundManager.effectsVolume > 0) {
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+          oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.2);
+          gainNode.gain.setValueAtTime(soundManager.effectsVolume * 0.3, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.2);
+          oscillator.start();
+          oscillator.stop(this.audioContext.currentTime + 0.2);
+        }
+      };
+
+      synthSounds.explosionSound = function () {
+        if (this.audioContext && soundManager.effectsVolume > 0) {
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+          oscillator.frequency.setValueAtTime(150, this.audioContext.currentTime);
+          oscillator.frequency.exponentialRampToValueAtTime(50, this.audioContext.currentTime + 0.5);
+          gainNode.gain.setValueAtTime(soundManager.effectsVolume * 0.5, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.5);
+          oscillator.start();
+          oscillator.stop(this.audioContext.currentTime + 0.5);
+        }
+      };
+    }
+
+    // Ses ayarlarını yükle
+    soundManager.effectsVolume = localStorage.getItem('soundEnabled') !== 'false' ?
+      (parseInt(localStorage.getItem('soundVolume') || '70') / 100) : 0;
+    soundManager.musicVolume = parseInt(localStorage.getItem('musicVolume') || '50') / 100;
+
+    // Verileri yükle
+    AchievementSystem.loadStats();
+    SkillTree.loadSkills();
+    WeaponSystem.loadUnlockedWeapons();
+
+    // Global menü fonksiyonları
+    window.showAchievements = function () {
+      MenuSystem.showAchievements();
+    };
+
+    window.showStats = function () {
+      MenuSystem.showStats();
+    };
+
+    window.showSettings = function () {
+      MenuSystem.showSettings();
+    };
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -94,78 +328,182 @@
     ninjaImg.src = 'image/ninja.png';
 
     const askerImg = new Image();
-    askerImg.src = 'image/asker.png';
-
-    const zombie1Img = new Image();
+    askerImg.src = 'image/asker.png'; const zombie1Img = new Image();
     zombie1Img.src = 'image/zombi1.png';
 
     const zombie2Img = new Image();
-    zombie2Img.src = 'image/zombi2.png';
+    zombie2Img.src = 'image/zombi2.png'; const bossImg = new Image();
+    bossImg.src = 'image/boss.png';
+
+    const patImg = new Image();
+    patImg.src = 'image/pat.png';
+
+    const zirhImg = new Image();
+    zirhImg.src = 'image/zırh.png';
+
+    const kizImg = new Image();
+    kizImg.src = 'image/kız.png';
 
     let shurikens = [];
     let zombies = [];
     let particles = [];
     let score = 0;
     let lastScore = 0;
-    let gameOver = false;
-
-    let keys = {};
+    let gameOver = false; let keys = {};
+    let gameLoopRunning = false; // Animasyon döngüsü kontrolü
 
     let round = 1;
     let zombiesKilled = 0;
     let maxRounds = 5;
-    let roundThresholds = [5, 30, 40, 50]; // 1. rounddan 2. rounda 5 zombi öldürünce geçiş
+    let roundThresholds = [30, 50, 40, 50]; // 1. rounddan 2. rounda 30 zombi, 2. den 3. e 50 zombi, 3. den 4. e 40 zombi
     let bullets = Infinity; // Mermi sınırsız
     let bulletDropActive = false;
     let bulletDrops = [];
     let armorActive = false;
     let armorDrops = [];
     let armorTimeout;
-    let roundTextTimeout;
+    let roundTextTimeout; let selectedCharacter = 'ninja';
+    let playerDirection = 1; // 1: sağa, -1: sola
 
-    let selectedCharacter = 'ninja';
+    // === YENİ ÖZELLİKLER ===
+    // DASH SİSTEMİ
+    let dashSystem = {
+      available: true,
+      cooldown: 3000, // 3 saniye
+      lastDashTime: 0,
+      distance: 150, // Dash mesafesi
+      immunity: 500 // Dash sırasında 0.5 saniye bağışıklık
+    };
+    let playerImmune = false;
 
-    // --- Sabit sağa mermi, power-up ve hasar sistemi için değişkenler ---
+    // ÖZEL YETENEKLER SİSTEMİ
+    let specialAbilities = {
+      lightning: { cooldown: 8000, lastUse: 0, cost: 20 },
+      tornado: { cooldown: 12000, lastUse: 0, cost: 35 },
+      fireball: { cooldown: 6000, lastUse: 0, cost: 15 }
+    };
+
+    // YENİ DÜŞMAN TİPLERİ
+    let fastZombies = [];
+    let armoredZombies = [];
+    let bomberZombies = [];
+    let crawlerZombies = [];
+
+    // YENİ POWER-UP'LAR
+    let activePowerUps = {
+      shield: { active: false, duration: 0 },
+      electricAura: { active: false, duration: 0 },
+      autoAim: { active: false, duration: 0 },
+      slowMotion: { active: false, duration: 0 }
+    };
+
+    // MİSYON SİSTEMİ
+    let missions = {
+      daily: [],
+      current: null,
+      completed: parseInt(localStorage.getItem('missionsCompleted') || '0')
+    };
+
+    // OYUN MODLARI
+    let gameMode = 'normal'; // normal, timeAttack, survival, bossRush
+    let gameModeData = {
+      timeAttack: { timeLeft: 300, score: 0 }, // 5 dakika
+      survival: { wave: 1, zombieCount: 0 },
+      bossRush: { bossCount: 0, timeToNext: 30 }
+    };
+
+    // VİZUAL EFFECTS
+    let visualEffects = [];
+    let screenShake = { intensity: 0, duration: 0 };
+
+    // Mağaza yükseltmeleri (önce bunları tanımla)
+    let playerUpgrades = {
+      maxHealthBonus: parseInt(localStorage.getItem('maxHealthBonus') || '0'),
+      speedBonus: parseFloat(localStorage.getItem('speedBonus') || '0'),
+      rapidFireBonus: parseInt(localStorage.getItem('rapidFireBonus') || '0'),
+      luckyShot: localStorage.getItem('luckyShot') === 'true'
+    };
+
+    // Silah yükseltmeleri (sonra bunları tanımla)
+    let weaponUpgrades = {
+      pistol: parseInt(localStorage.getItem('pistolUpgrade') || '0'),
+      rifle: parseInt(localStorage.getItem('rifleUpgrade') || '0'),
+      shotgun: parseInt(localStorage.getItem('shotgunUpgrade') || '0'),
+      laser: parseInt(localStorage.getItem('laserUpgrade') || '0')
+    };    // --- Silah Sistemi --- (en son bunları tanımla)
+    let currentWeapon = 'pistol'; let weapons = {
+      pistol: { damage: 70, speed: 12, fireRate: 300, name: 'Tabanca', price: 0, owned: true },
+      rifle: { damage: 120, speed: 15, fireRate: 150, name: 'Tüfek', price: 75, owned: false },
+      shotgun: { damage: 200, speed: 10, fireRate: 800, name: 'Pompalı', price: 100, owned: false },
+      laser: { damage: 150, speed: 20, fireRate: 100, name: 'Lazer', price: 150, owned: false }
+    };
+
+    // Sahip olunan silahları localStorage'dan yükle
+    function loadOwnedWeapons() {
+      Object.keys(weapons).forEach(weaponKey => {
+        const owned = localStorage.getItem(`weapon_${weaponKey}_owned`);
+        if (owned === 'true') {
+          weapons[weaponKey].owned = true;
+        }
+      });
+    }
+
+    // Sahip olunan silahları kaydet
+    function saveOwnedWeapons() {
+      Object.keys(weapons).forEach(weaponKey => {
+        localStorage.setItem(`weapon_${weaponKey}_owned`, weapons[weaponKey].owned);
+      });
+    }
+
+    let lastFireTime = 0;    // --- Boss Zombi Sistemi ---
+    let bossZombies = [];// --- Sabit sağa mermi, power-up ve hasar sistemi için değişkenler ---
     let doubleShotActive = false;
     let doubleShotTimeout;
     let powerUp = null;
+    let healthPack = null; // Can paketi
     let normalBulletDamage = 70; // 3 vuruşta öldürmek için
     let doubleBulletDamage = 100; // 2 vuruşta öldürmek için
 
+    // Zırh sistemi
+    let hasArmor = false;
+    let armorPrice = 40;
+
     // Video ve başlatma ekranı kontrolü
-    const introVideoContainer = document.getElementById('introVideoContainer');
-    const introVideo = document.getElementById('introVideo');
     const startScreen = document.getElementById('startScreen');
     const startBtn = document.getElementById('startBtn');
     const gameCanvas = document.getElementById('gameCanvas');
     const uiDiv = document.getElementById('ui');
-    const selectNinja = document.getElementById('selectNinja');
-    const selectAsker = document.getElementById('selectAsker');
-    let introWatched = false;
+    const selectNinja = document.getElementById('selectNinja'); const selectAsker = document.getElementById('selectAsker');
+    const pauseScreen = document.getElementById('pauseScreen');
+    const shopScreen = document.getElementById('shopScreen');
+    const healthPackOffer = document.getElementById('healthPackOffer');
     let firstGameStarted = false;
+    let gamePaused = false;
+    let shopOpen = false;
+    let healthPackOfferOpen = false;
 
     // Karakter seçme ekranı sadece ilk oyunda gelsin, sonrasında localStorage ile kontrol
-    let characterSelectShown = localStorage.getItem('characterSelectShown') === '1';
-
-    function showStartScreen() {
-      introVideoContainer.style.display = 'none';
-      // Eğer karakter seçme ekranı daha önce gösterildiyse, direkt oyuna başla
-      if (characterSelectShown) {
-        startGame();
-      } else {
-        startScreen.style.display = 'flex';
-        introWatched = true;
-      }
-    }
-
-    function startGame() {
+    let characterSelectShown = localStorage.getItem('characterSelectShown') === '1'; function showStartScreen() {
+      // Her zaman başlangıç ekranını göster
+      startScreen.style.display = 'flex';
+    } function startGame() {
       startScreen.style.display = 'none';
-      gameCanvas.style.display = '';
-      uiDiv.style.display = '';
+      gameCanvas.style.display = 'block';
+      uiDiv.style.display = 'block';
+
+      // Oyun başlarken tokenları sıfırla
+      localStorage.setItem('coins', '0');
       setBackground(1);
       showRoundText();
       updateUI();
-      updateGame();
+
+      // Animasyon döngüsünü başlat
+      if (!gameLoopRunning) {
+        gameLoopRunning = true;
+        updateGame();
+      }
+
+      startZombieSpawn(); // Zombi spawn'ı başlat
       firstGameStarted = true;
       doubleShotActive = false;
       powerUp = null;
@@ -175,25 +513,64 @@
         localStorage.setItem('characterSelectShown', '1');
         characterSelectShown = true;
       }
-    }
-    // Video otomatik başlar, 8 saniye sonra başlat ekranı gelsin
-    window.addEventListener('DOMContentLoaded', function () {
-      introVideo.play();
-      setTimeout(showStartScreen, 8000); // 8 saniye sonra otomatik geçiş
-    });
-    // Video kullanıcı tarafından geçilirse de başlat ekranı gelsin
-    introVideo.addEventListener('click', function () {
-      if (!introWatched) {
-        introVideo.pause();
-        showStartScreen();
+    }    // Pause fonksiyonları
+    function pauseGame() {
+      gamePaused = true;
+      pauseScreen.style.display = 'flex';
+      stopZombieSpawn(); // Zombi spawn'ı durdur
+    } function resumeGame() {
+      gamePaused = false; pauseScreen.style.display = 'none';
+      startZombieSpawn(); // Zombi spawn'ı tekrar başlat
+      // Oyun döngüsünü tekrar başlat
+      if (!gameOver && !shopOpen && !healthPackOfferOpen && !gameLoopRunning) {
+        gameLoopRunning = true;
+        updateGame();
       }
+    }// Direkt oyunu başlat (video yok)
+    window.addEventListener('DOMContentLoaded', function () {
+      loadOwnedWeapons(); // Sahip olunan silahları yükle
+      updateWeaponStats(); // Başlangıçta silah statlarını güncelle
+
+      // Eski menü elemanlarını gizle
+      const startScreen = document.getElementById('startScreen');
+      const gameCanvas = document.getElementById('gameCanvas');
+      const ui = document.getElementById('ui');
+
+      if (startScreen) startScreen.style.display = 'none';
+      if (gameCanvas) gameCanvas.style.display = 'none';
+      if (ui) ui.style.display = 'none';
+
+      // Yeni menü sistemini başlat
+      MenuSystem.showMainMenu();
     });
+
     // Başla butonu
     startBtn.addEventListener('click', startGame);
+
     // Space veya Enter ile başlat
     window.addEventListener('keydown', function (e) {
       if (startScreen.style.display === 'flex' && (e.code === 'Space' || e.code === 'Enter')) {
         startGame();
+      }
+      // ESC ile pause/resume
+      if (e.code === 'Escape' && firstGameStarted && !gameOver) {
+        if (healthPackOfferOpen) {
+          closeHealthPackOffer();
+        } else if (shopOpen) {
+          closeShop();
+        } else if (gamePaused) {
+          resumeGame();
+        } else {
+          pauseGame();
+        }
+      }
+      // M ile mağaza aç/kapat
+      if (e.code === 'KeyM' && firstGameStarted && !gameOver && !gamePaused && !healthPackOfferOpen) {
+        if (shopOpen) {
+          closeShop();
+        } else {
+          openShop();
+        }
       }
     });
 
@@ -207,9 +584,528 @@
       selectedCharacter = 'asker';
       selectAsker.style.borderColor = 'lime';
       selectNinja.style.borderColor = 'yellow';
+    });    // Başlangıçta ninja seçili görünsün
+    selectNinja.style.borderColor = 'lime';    // Mağaza event listener'ları
+    document.getElementById('closeShop').addEventListener('click', closeShop);
+
+    // Silah satın alma
+    document.getElementById('buyRifle').addEventListener('click', () => {
+      buyWeapon('rifle');
     });
-    // Başlangıçta ninja seçili görünsün
-    selectNinja.style.borderColor = 'lime';
+
+    document.getElementById('buyShotgun').addEventListener('click', () => {
+      buyWeapon('shotgun');
+    });
+
+    document.getElementById('buyLaser').addEventListener('click', () => {
+      buyWeapon('laser');
+    });
+
+    document.getElementById('buyArmor').addEventListener('click', () => {
+      buyArmor();
+    });
+
+    // Silah yükseltmeleri
+    document.getElementById('pistolUpgrade').addEventListener('click', () => {
+      purchaseUpgrade('weapon', 50, 'pistol', 10);
+    });
+
+    document.getElementById('rifleUpgrade').addEventListener('click', () => {
+      purchaseUpgrade('weapon', 80, 'rifle', 15);
+    });
+
+    document.getElementById('shotgunUpgrade').addEventListener('click', () => {
+      purchaseUpgrade('weapon', 100, 'shotgun', 20);
+    });
+
+    document.getElementById('laserUpgrade').addEventListener('click', () => {
+      purchaseUpgrade('weapon', 120, 'laser', 18);
+    });
+
+    document.getElementById('healthUpgrade').addEventListener('click', () => {
+      purchaseUpgrade('player', 60, 'maxHealthBonus', 50);
+    });
+
+    document.getElementById('speedUpgrade').addEventListener('click', () => {
+      purchaseUpgrade('player', 70, 'speedBonus', 0.5);
+    });
+
+    document.getElementById('rapidFireUpgrade').addEventListener('click', () => {
+      purchaseUpgrade('player', 90, 'rapidFireBonus', 50);
+    });
+    document.getElementById('luckyShot').addEventListener('click', () => {
+      if (!playerUpgrades.luckyShot) {
+        purchaseUpgrade('player', 150, 'luckyShot', true);
+      }
+    });
+
+    // Can paketi butonları
+    document.getElementById('buyHealthPack').addEventListener('click', buyHealthPack);
+    document.getElementById('rejectHealthPack').addEventListener('click', closeHealthPackOffer);
+
+    // Pause ekranı butonları
+    document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+    document.getElementById('backToMenuBtn').addEventListener('click', showMainMenuFromPause);
+
+    // === YENİ ÖZELLİK FONKSİYONLARI ===
+
+    // DASH SİSTEMİ FONKSİYONLARI
+    function performDash() {
+      if (!dashSystem.available) return;
+      if (Date.now() - dashSystem.lastDashTime < dashSystem.cooldown) return;
+
+      dashSystem.lastDashTime = Date.now();
+      dashSystem.available = false;
+
+      // Dash yönünü belirle (hareket yönüne göre)
+      let dashX = 0, dashY = 0;
+      if (keys['ArrowLeft'] || keys['a'] || keys['A']) dashX = -1;
+      if (keys['ArrowRight'] || keys['d'] || keys['D']) dashX = 1;
+      if (keys['ArrowUp'] || keys['w'] || keys['W']) dashY = -1;
+      if (keys['ArrowDown'] || keys['s'] || keys['S']) dashY = 1;
+
+      // Hiç hareket yoksa oyuncunun baktığı yöne dash
+      if (dashX === 0 && dashY === 0) {
+        dashX = playerDirection;
+      }
+
+      // Normalize dash direction
+      if (dashX !== 0 && dashY !== 0) {
+        dashX *= 0.707;
+        dashY *= 0.707;
+      }
+
+      // Dash yap
+      let newX = player.x + (dashX * dashSystem.distance);
+      let newY = player.y + (dashY * dashSystem.distance);
+
+      // Sınırları kontrol et
+      newX = Math.max(0, Math.min(canvas.width - player.width, newX));
+      newY = Math.max(0, Math.min(canvas.height - player.height, newY));
+
+      player.x = newX;
+      player.y = newY;
+
+      // Dash efekti
+      addVisualEffect('dash', player.x + player.width / 2, player.y + player.height / 2);
+
+      // Kısa süre bağışıklık
+      playerImmune = true;
+      setTimeout(() => { playerImmune = false; }, dashSystem.immunity);
+
+      // Cooldown sonrası tekrar kullanılabilir
+      setTimeout(() => { dashSystem.available = true; }, dashSystem.cooldown);
+
+      // Dash ses efekti
+      if (synthSounds && soundManager.effectsVolume > 0) {
+        synthSounds.dashSound();
+      }
+
+      // Screen shake
+      addScreenShake(3, 200);
+    }
+
+    // ÖZEL YETENEKLER FONKSİYONLARI
+    function useSpecialAbility(abilityType) {
+      const ability = specialAbilities[abilityType];
+      if (!ability) return;
+
+      if (Date.now() - ability.lastUse < ability.cooldown) return;
+
+      let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+      if (savedCoins < ability.cost) {
+        showMessage(`Yetersiz jeton! ${ability.cost} gerekli.`, 'red');
+        return;
+      }
+
+      savedCoins -= ability.cost;
+      localStorage.setItem('coins', savedCoins);
+      ability.lastUse = Date.now();
+
+      switch (abilityType) {
+        case 'lightning':
+          performLightningStrike();
+          break;
+        case 'tornado':
+          performTornado();
+          break; case 'fireball':
+          performFireball();
+          break;
+      }
+
+      // GÖREVLERİ GÜNCELLe - Özel yetenek kullanıldı
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('specialAbilityUsed'));
+      }
+
+      updateUI();
+    }
+
+    function performLightningStrike() {
+      // Rastgele 5 zombiyi hedefle
+      let targets = [...zombies, ...bossZombies, ...fastZombies, ...armoredZombies].slice(0, 5);
+
+      targets.forEach(zombie => {
+        // Lightning damage
+        zombie.hp -= 300;
+        addVisualEffect('lightning', zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+
+        if (zombie.hp <= 0) {
+          killZombie(zombie);
+        }
+      });
+
+      addScreenShake(5, 500);
+      showMessage('⚡ ŞIMŞEK SALDIIRISI!', 'cyan');
+    }
+
+    function performTornado() {
+      // Oyuncunun etrafında tornado oluştur
+      let tornadoRadius = 150;
+
+      [...zombies, ...bossZombies, ...fastZombies, ...armoredZombies].forEach(zombie => {
+        let dx = zombie.x - player.x;
+        let dy = zombie.y - player.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < tornadoRadius) {
+          zombie.hp -= 200;
+          // Zombileri dışarı fırlat
+          let pushForce = 50;
+          zombie.x += (dx / distance) * pushForce;
+          zombie.y += (dy / distance) * pushForce;
+
+          if (zombie.hp <= 0) {
+            killZombie(zombie);
+          }
+        }
+      });
+
+      addVisualEffect('tornado', player.x + player.width / 2, player.y + player.height / 2);
+      addScreenShake(4, 800);
+      showMessage('🌪️ TORNADO!', 'gray');
+    }
+
+    function performFireball() {
+      // 3 fireball oluştur
+      for (let i = 0; i < 3; i++) {
+        let angle = (Math.PI * 2 / 3) * i + (Math.PI * 2 * Date.now() / 1000);
+
+        shurikens.push({
+          x: player.x + player.width / 2,
+          y: player.y + player.height / 2,
+          vx: Math.cos(angle) * 8,
+          vy: Math.sin(angle) * 8,
+          damage: 250,
+          type: 'fireball',
+          life: 120
+        });
+      }
+
+      showMessage('🔥 ATEŞTOPUları!', 'orange');
+    }
+
+    // === ESKİ FONKSİYONLAR ===
+
+    // YENİ DÜŞMAN TİPLERİ FONKSİYONLARI
+    function spawnFastZombie() {
+      let zombie = {
+        x: canvas.width + 50,
+        y: Math.random() * (canvas.height - 48),
+        width: 48,
+        height: 48,
+        speed: 4.5, // Çok hızlı
+        hp: 120,
+        maxHp: 120,
+        type: 'fast',
+        color: 'yellow'
+      };
+      fastZombies.push(zombie);
+    }
+
+    function spawnArmoredZombie() {
+      let zombie = {
+        x: canvas.width + 50,
+        y: Math.random() * (canvas.height - 80),
+        width: 80,
+        height: 80,
+        speed: 1.5, // Yavaş ama güçlü
+        hp: 500,
+        maxHp: 500,
+        type: 'armored',
+        color: 'silver',
+        armor: 0.5 // %50 hasar azaltma
+      };
+      armoredZombies.push(zombie);
+    }
+
+    function spawnBomberZombie() {
+      let zombie = {
+        x: canvas.width + 50,
+        y: Math.random() * (canvas.height - 64),
+        width: 64,
+        height: 64,
+        speed: 3,
+        hp: 180,
+        maxHp: 180,
+        type: 'bomber',
+        color: 'red',
+        explodeRadius: 100,
+        explodeDamage: 80
+      };
+      bomberZombies.push(zombie);
+    }
+
+    function spawnCrawlerZombie() {
+      let zombie = {
+        x: canvas.width + 50,
+        y: Math.random() * (canvas.height - 32),
+        width: 32,
+        height: 32,
+        speed: 2.5,
+        hp: 80,
+        maxHp: 80,
+        type: 'crawler',
+        color: 'green'
+      };
+      crawlerZombies.push(zombie);
+    }
+
+    // YENİ POWER-UP FONKSİYONLARI
+    function spawnNewPowerUp() {
+      let types = ['shield', 'electricAura', 'autoAim', 'slowMotion'];
+      let type = types[Math.floor(Math.random() * types.length)];
+
+      powerUp = {
+        x: Math.random() * (canvas.width - 80) + 40,
+        y: Math.random() * (canvas.height - 80) + 40,
+        size: 32,
+        active: true,
+        type: type
+      };
+    }
+
+    function activatePowerUp(type) {
+      switch (type) {
+        case 'shield':
+          activePowerUps.shield.active = true;
+          activePowerUps.shield.duration = 10000; // 10 saniye
+          showMessage('🛡️ KALKAN AKTİF!', 'blue');
+          setTimeout(() => {
+            activePowerUps.shield.active = false;
+          }, 10000);
+          break;
+
+        case 'electricAura':
+          activePowerUps.electricAura.active = true;
+          activePowerUps.electricAura.duration = 8000; // 8 saniye
+          showMessage('⚡ ELEKTRİK AURA!', 'cyan');
+          setTimeout(() => {
+            activePowerUps.electricAura.active = false;
+          }, 8000);
+          break;
+
+        case 'autoAim':
+          activePowerUps.autoAim.active = true;
+          activePowerUps.autoAim.duration = 15000; // 15 saniye
+          showMessage('🎯 OTOMATİK NİŞAN!', 'lime');
+          setTimeout(() => {
+            activePowerUps.autoAim.active = false;
+          }, 15000);
+          break;
+
+        case 'slowMotion':
+          activePowerUps.slowMotion.active = true;
+          activePowerUps.slowMotion.duration = 6000; // 6 saniye
+          showMessage('⏰ YAVAŞ ZAMAN!', 'purple');
+          setTimeout(() => {
+            activePowerUps.slowMotion.active = false;
+          }, 6000);
+          break;
+      }
+    }
+
+    // VİZUAL EFFECTS FONKSİYONLARI
+    function addVisualEffect(type, x, y) {
+      visualEffects.push({
+        type: type,
+        x: x,
+        y: y,
+        life: type === 'lightning' ? 30 : type === 'tornado' ? 60 : 20,
+        maxLife: type === 'lightning' ? 30 : type === 'tornado' ? 60 : 20
+      });
+    }
+
+    function updateVisualEffects() {
+      visualEffects = visualEffects.filter(effect => effect.life > 0);
+      visualEffects.forEach(effect => {
+        effect.life--;
+      });
+    }
+
+    function drawVisualEffects() {
+      visualEffects.forEach(effect => {
+        let alpha = effect.life / effect.maxLife;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        switch (effect.type) {
+          case 'dash':
+            ctx.fillStyle = 'cyan';
+            ctx.fillRect(effect.x - 20, effect.y - 20, 40, 40);
+            break;
+          case 'lightning':
+            ctx.strokeStyle = 'yellow';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(effect.x, effect.y - 50);
+            ctx.lineTo(effect.x + 20, effect.y);
+            ctx.lineTo(effect.x - 10, effect.y + 30);
+            ctx.stroke();
+            break;
+          case 'tornado':
+            ctx.strokeStyle = 'gray';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(effect.x, effect.y, 30 + (effect.maxLife - effect.life) * 2, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+        }
+
+        ctx.restore();
+      });
+    }
+
+    function addScreenShake(intensity, duration) {
+      screenShake.intensity = intensity;
+      screenShake.duration = duration;
+    }
+
+    function updateScreenShake() {
+      if (screenShake.duration > 0) {
+        screenShake.duration -= 16; // 60 FPS
+        if (screenShake.duration <= 0) {
+          screenShake.intensity = 0;
+        }
+      }
+    }
+
+    function applyScreenShake() {
+      if (screenShake.intensity > 0) {
+        let shakeX = (Math.random() - 0.5) * screenShake.intensity;
+        let shakeY = (Math.random() - 0.5) * screenShake.intensity;
+        ctx.translate(shakeX, shakeY);
+      }
+    }
+    // UTILITY FONKSİYONLARI
+    function killZombie(zombie) {
+      // Zombi türüne göre uygun diziden çıkar
+      let zombieArrays = [zombies, bossZombies, fastZombies, armoredZombies, bomberZombies, crawlerZombies];
+
+      zombieArrays.forEach(arr => {
+        let index = arr.indexOf(zombie);
+        if (index !== -1) {
+          arr.splice(index, 1);
+          score += zombie.type === 'boss' ? 100 : 10;
+          zombiesKilled++;
+
+          // Token ve XP verme
+          let tokenReward = zombie.type === 'boss' ? 75 : 15;
+          let xpReward = zombie.type === 'boss' ? 100 : 15;
+
+          let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+          savedCoins += tokenReward;
+          localStorage.setItem('coins', savedCoins);
+
+          player.xp += xpReward;
+          checkLevelUp();
+
+          // GÖREVLERİ GÜNCELLe
+          if (typeof window !== 'undefined' && window.dispatchEvent) {
+            window.dispatchEvent(new CustomEvent('zombieKilled'));
+          }
+
+          spawnParticles(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+        }
+      });
+    }
+
+    function checkLevelUp() {
+      if (player.xp >= player.xpToNext) {
+        player.level++;
+        player.xp = 0;
+        player.xpToNext += 50;
+        player.maxHealth += 20;
+        player.health = player.maxHealth;
+
+        showMessage(`LEVEL UP! (${player.level})`, 'gold');
+      }
+    }
+
+    // MİSYON SİSTEMİ FONKSİYONLARI
+    function generateDailyMissions() {
+      let missionTypes = [
+        { type: 'kill', target: 50, reward: 100, desc: '50 zombi öldür' },
+        { type: 'survive', target: 300, reward: 150, desc: '5 dakika hayatta kal' },
+        { type: 'boss', target: 3, reward: 200, desc: '3 boss öldür' },
+        { type: 'score', target: 1000, reward: 120, desc: '1000 puan kazan' }
+      ];
+
+      return missionTypes[Math.floor(Math.random() * missionTypes.length)];
+    }
+
+    // BOMBA ZOMBİSİ PATLATMA FONKSİYONU
+    function explodeBomberZombie(bomber) {
+      let bomberIndex = bomberZombies.indexOf(bomber);
+      if (bomberIndex === -1) return;
+
+      // Patlama hasarı oyuncuya
+      let dx = player.x - bomber.x;
+      let dy = player.y - bomber.y;
+      let distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < bomber.explodeRadius) {
+        if (!activePowerUps.shield.active && !playerImmune) {
+          player.health -= bomber.explodeDamage;
+          addScreenShake(8, 600);
+          if (player.health <= 0) endGame();
+        }
+      }
+
+      // Çevredeki diğer zombilere hasar ver
+      [...zombies, ...fastZombies, ...armoredZombies, ...crawlerZombies].forEach(zombie => {
+        let zdx = zombie.x - bomber.x;
+        let zdy = zombie.y - bomber.y;
+        let zdist = Math.sqrt(zdx * zdx + zdy * zdy);
+
+        if (zdist < bomber.explodeRadius) {
+          zombie.hp -= bomber.explodeDamage;
+          if (zombie.hp <= 0) {
+            killZombie(zombie);
+          }
+        }
+      });
+
+      // Patlama efekti
+      for (let i = 0; i < 20; i++) {
+        particles.push({
+          x: bomber.x + bomber.width / 2,
+          y: bomber.y + bomber.height / 2,
+          vx: (Math.random() - 0.5) * 10,
+          vy: (Math.random() - 0.5) * 10,
+          life: 40
+        });
+      }
+
+      // Bomba zombisini kaldır
+      bomberZombies.splice(bomberIndex, 1);
+      score += 20; // Bomba zombisi özel puan
+
+      // Patlama ses efekti
+      if (synthSounds && soundManager.effectsVolume > 0) {
+        synthSounds.explosionSound();
+      }
+    }
 
     function setBackground(round) {
       const canvas = document.getElementById('gameCanvas');
@@ -220,10 +1116,13 @@
       } else {
         canvas.style.backgroundImage = "url('image/arkaplan.png')";
       }
-    }
+    } function showRoundText() {
+      // Önceki round text'i temizle
+      let existingRoundText = document.getElementById('roundText');
+      if (existingRoundText && existingRoundText.parentNode) {
+        existingRoundText.parentNode.removeChild(existingRoundText);
+      }
 
-    function showRoundText() {
-      setBackground(round);
       const roundDiv = document.createElement('div');
       roundDiv.id = 'roundText';
       roundDiv.style.position = 'absolute';
@@ -234,15 +1133,19 @@
       roundDiv.style.fontSize = '40px';
       roundDiv.style.fontWeight = 'bold';
       roundDiv.style.textShadow = '2px 2px 8px #000';
+      roundDiv.style.zIndex = '1000';
       roundDiv.textContent = `${round}. Round`;
       document.body.appendChild(roundDiv);
-      clearTimeout(roundTextTimeout);
+
+      // Önceki timeout'u temizle
+      if (roundTextTimeout) {
+        clearTimeout(roundTextTimeout);
+      }
+
       roundTextTimeout = setTimeout(() => {
         if (roundDiv.parentNode) roundDiv.parentNode.removeChild(roundDiv);
       }, 2000); // 2 saniye sonra otomatik kaybolacak
-    }
-
-    function updateUI() {
+    } function updateUI() {
       scoreEl.textContent = score;
       highScoreEl.textContent = localStorage.getItem('highScore') || '0';
       let bulletSpan = document.getElementById('bullets');
@@ -252,7 +1155,7 @@
         bulletSpan.style.marginLeft = '20px';
         document.getElementById('ui').appendChild(bulletSpan);
       }
-      bulletSpan.textContent = `Mermi: ∞`;
+      bulletSpan.textContent = `Silah: ${weapons[currentWeapon].name}`;
       // Can barı
       let livesBar = document.getElementById('livesBar');
       if (!livesBar) {
@@ -261,7 +1164,7 @@
         livesBar.style.marginLeft = '20px';
         document.getElementById('ui').appendChild(livesBar);
       }
-      livesBar.textContent = `Can: ${player.health}/100`;
+      livesBar.textContent = `Can: ${player.health}/${player.maxHealth}`;
       let coinSpan = document.getElementById('coins');
       if (!coinSpan) {
         coinSpan = document.createElement('span');
@@ -270,51 +1173,231 @@
         document.getElementById('ui').appendChild(coinSpan);
       }
       let savedCoins = parseInt(localStorage.getItem('coins') || '0');
-      coinSpan.textContent = `Jeton: ${savedCoins}`;
-    }
+      coinSpan.textContent = `Jeton: ${savedCoins}`;      // Level ve XP
+      let levelSpan = document.getElementById('level');
+      if (!levelSpan) {
+        levelSpan = document.createElement('span');
+        levelSpan.id = 'level';
+        levelSpan.style.marginLeft = '20px';
+        document.getElementById('ui').appendChild(levelSpan);
+      }
+      levelSpan.textContent = `Level: ${player.level} (${player.xp}/${player.xpToNext} XP) | Q:Dash E:Şimşek R:Tornado T:Ateş`;
 
-    let player = {
-      x: 100,
-      y: 350,
+      // DASH VE ÖZEL YETENEKLERİN COOLDOWN GÖSTERGELERİ
+      let abilitiesSpan = document.getElementById('abilities');
+      if (!abilitiesSpan) {
+        abilitiesSpan = document.createElement('div');
+        abilitiesSpan.id = 'abilities';
+        abilitiesSpan.style.position = 'absolute';
+        abilitiesSpan.style.top = '90px';
+        abilitiesSpan.style.left = '10px';
+        abilitiesSpan.style.color = 'white';
+        abilitiesSpan.style.fontSize = '14px';
+        document.body.appendChild(abilitiesSpan);
+      }
+
+      let dashCooldown = Math.max(0, dashSystem.cooldown - (Date.now() - dashSystem.lastDashTime));
+      let lightningCooldown = Math.max(0, specialAbilities.lightning.cooldown - (Date.now() - specialAbilities.lightning.lastUse));
+      let tornadoCooldown = Math.max(0, specialAbilities.tornado.cooldown - (Date.now() - specialAbilities.tornado.lastUse));
+      let fireballCooldown = Math.max(0, specialAbilities.fireball.cooldown - (Date.now() - specialAbilities.fireball.lastUse));
+
+      abilitiesSpan.innerHTML = `
+        <div>🏃‍♂️ Dash (Q): ${dashCooldown > 0 ? Math.ceil(dashCooldown / 1000) + 's' : 'HAZIR'}</div>
+        <div>⚡ Şimşek (E): ${lightningCooldown > 0 ? Math.ceil(lightningCooldown / 1000) + 's' : 'HAZIR'} (${specialAbilities.lightning.cost} jeton)</div>
+        <div>🌪️ Tornado (R): ${tornadoCooldown > 0 ? Math.ceil(tornadoCooldown / 1000) + 's' : 'HAZIR'} (${specialAbilities.tornado.cost} jeton)</div>
+        <div>🔥 Ateştopları (T): ${fireballCooldown > 0 ? Math.ceil(fireballCooldown / 1000) + 's' : 'HAZIR'} (${specialAbilities.fireball.cost} jeton)</div>
+      `;
+
+      // AKTİF POWER-UP'LARI GÖSTER
+      let powerUpSpan = document.getElementById('activePowerUps');
+      if (!powerUpSpan) {
+        powerUpSpan = document.createElement('div');
+        powerUpSpan.id = 'activePowerUps';
+        powerUpSpan.style.position = 'absolute';
+        powerUpSpan.style.top = '200px';
+        powerUpSpan.style.left = '10px';
+        powerUpSpan.style.color = 'yellow';
+        powerUpSpan.style.fontSize = '16px';
+        document.body.appendChild(powerUpSpan);
+      }
+
+      let activePowerUpText = '';
+      if (activePowerUps.shield.active) activePowerUpText += '🛡️ KALKAN ';
+      if (activePowerUps.electricAura.active) activePowerUpText += '⚡ ELEKTRİK ';
+      if (activePowerUps.autoAim.active) activePowerUpText += '🎯 OTO-NİŞAN ';
+      if (activePowerUps.slowMotion.active) activePowerUpText += '⏰ YAVAŞ ';
+      if (doubleShotActive) activePowerUpText += '✖️2 ÇİFTE ';
+
+      powerUpSpan.textContent = activePowerUpText;
+
+      // Market bilgisi
+      let marketSpan = document.getElementById('marketInfo');
+      if (!marketSpan) {
+        marketSpan = document.createElement('span');
+        marketSpan.id = 'marketInfo';
+        marketSpan.style.marginLeft = '20px';
+        marketSpan.style.color = 'yellow';
+        document.getElementById('ui').appendChild(marketSpan);
+      }
+      marketSpan.textContent = `🛒 Market: M tuşu`;
+    } let player = {
+      x: 150,
+      y: 300,
       width: 64,
       height: 64,
       vy: 0,
       onGround: true,
-      health: 100,
-      coins: 0
-    };
-
-    function drawPlayer() {
+      health: 100 + playerUpgrades.maxHealthBonus,
+      maxHealth: 100 + playerUpgrades.maxHealthBonus,
+      coins: 0,
+      level: 1,
+      xp: 0,
+      xpToNext: 100
+    }; function drawPlayer() {
       let img = selectedCharacter === 'asker' ? askerImg : ninjaImg;
       ctx.save();
-      ctx.drawImage(img, player.x, player.y, player.width, player.height);
-      // Can barı
-      ctx.fillStyle = 'red';
-      ctx.fillRect(player.x, player.y - 16, player.width, 8);
-      ctx.fillStyle = 'lime';
-      ctx.fillRect(player.x, player.y - 16, player.width * (player.health / 100), 8);
-      ctx.strokeStyle = '#222';
-      ctx.strokeRect(player.x, player.y - 16, player.width, 8);
-      ctx.restore();
-    }
 
-    function drawZombies() {
+      // Eğer sola bakıyorsa karakteri çevir
+      if (playerDirection === -1) {
+        ctx.scale(-1, 1);
+        ctx.drawImage(img, -player.x - player.width, player.y, player.width, player.height);
+
+        // Zırh görsel efekti
+        if (hasArmor) {
+          ctx.strokeStyle = 'gold';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(-player.x - player.width - 2, player.y - 2, player.width + 4, player.height + 4);
+        }
+
+        // Can barı (çevrilmiş koordinatlara göre)
+        ctx.fillStyle = 'red';
+        ctx.fillRect(-player.x - player.width, player.y - 16, player.width, 8);
+        ctx.fillStyle = 'lime';
+        ctx.fillRect(-player.x - player.width, player.y - 16, player.width * (player.health / player.maxHealth), 8);
+        ctx.strokeStyle = '#222';
+        ctx.strokeRect(-player.x - player.width, player.y - 16, player.width, 8);
+      } else {
+        // Normal sağa bakan pozisyon
+        ctx.drawImage(img, player.x, player.y, player.width, player.height);
+
+        // Zırh görsel efekti
+        if (hasArmor) {
+          ctx.strokeStyle = 'gold';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(player.x - 2, player.y - 2, player.width + 4, player.height + 4);
+        }
+
+        // Can barı
+        ctx.fillStyle = 'red';
+        ctx.fillRect(player.x, player.y - 16, player.width, 8);
+        ctx.fillStyle = 'lime';
+        ctx.fillRect(player.x, player.y - 16, player.width * (player.health / player.maxHealth), 8);
+        ctx.strokeStyle = '#222';
+        ctx.strokeRect(player.x, player.y - 16, player.width, 8);
+      }
+
+      ctx.restore();
+    } function drawZombies() {
+      // Eski zombiler
       zombies.forEach(z => {
         const img = z.type === 1 ? zombie1Img : zombie2Img;
         ctx.drawImage(img, z.x, z.y, z.width, z.height);
-        // Zombi can barı
+        drawZombieHealthBar(z);
+      });      // Hızlı zombiler (kız.png)
+      fastZombies.forEach(z => {
+        ctx.drawImage(kizImg, z.x, z.y, z.width, z.height);
+        drawZombieHealthBar(z);
+      });      // Zırhlı zombiler (zırh.png)
+      armoredZombies.forEach(z => {
+        ctx.drawImage(zirhImg, z.x, z.y, z.width, z.height);
+        drawZombieHealthBar(z);
+      });// Bomba zombiler (kırmızı)
+      bomberZombies.forEach(z => {
+        // Pat.png görselini kullan
+        ctx.drawImage(patImg, z.x, z.y, z.width, z.height);
+        drawZombieHealthBar(z);
+      });
+
+      // Sürünen zombiler (yeşil)
+      crawlerZombies.forEach(z => {
+        ctx.fillStyle = 'green';
+        ctx.fillRect(z.x, z.y, z.width, z.height);
+        ctx.fillStyle = 'darkgreen';
+        ctx.fillRect(z.x + 3, z.y + 3, z.width - 6, z.height - 6);
         ctx.fillStyle = 'red';
-        ctx.fillRect(z.x, z.y - 12, z.width, 6);
-        ctx.fillStyle = 'lime';
-        ctx.fillRect(z.x, z.y - 12, z.width * (z.hp / z.maxHp), 6);
-        ctx.strokeStyle = '#222';
-        ctx.strokeRect(z.x, z.y - 12, z.width, 6);
+        ctx.fillRect(z.x + 5, z.y + 5, 6, 6); // Göz
+        ctx.fillRect(z.x + 21, z.y + 5, 6, 6); // Göz
+        drawZombieHealthBar(z);
+      });
+
+      // Boss zombileri çiz
+      bossZombies.forEach(boss => {
+        ctx.save();
+
+        // Boss PNG görselini çiz (kendi yönüne göre)
+        if (boss.direction === -1) {
+          // Boss sola bakıyor
+          ctx.scale(-1, 1);
+          ctx.drawImage(bossImg, -boss.x - boss.width, boss.y, boss.width, boss.height);
+
+          // Boss yazısı (çevrilmiş koordinatlara göre)
+          ctx.fillStyle = 'yellow';
+          ctx.font = '16px bold monospace';
+          ctx.fillText('BOSS', -boss.x - boss.width + 10, boss.y - 25);
+
+          // Boss can barı (çevrilmiş koordinatlara göre)
+          ctx.fillStyle = 'darkred';
+          ctx.fillRect(-boss.x - boss.width, boss.y - 20, boss.width, 10);
+          ctx.fillStyle = 'red';
+          ctx.fillRect(-boss.x - boss.width, boss.y - 20, boss.width * (boss.hp / boss.maxHp), 10);
+          ctx.strokeStyle = '#000';
+          ctx.strokeRect(-boss.x - boss.width, boss.y - 20, boss.width, 10);
+        } else {
+          // Boss sağa bakıyor (normal)
+          ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
+
+          // Boss yazısı
+          ctx.fillStyle = 'yellow';
+          ctx.font = '16px bold monospace';
+          ctx.fillText('BOSS', boss.x + 10, boss.y - 25);
+
+          // Boss can barı (daha büyük)
+          ctx.fillStyle = 'darkred';
+          ctx.fillRect(boss.x, boss.y - 20, boss.width, 10);
+          ctx.fillStyle = 'red';
+          ctx.fillRect(boss.x, boss.y - 20, boss.width * (boss.hp / boss.maxHp), 10);
+          ctx.strokeStyle = '#000';
+          ctx.strokeRect(boss.x, boss.y - 20, boss.width, 10);
+        }
+
+        ctx.restore();
       });
     }
 
-    function drawShurikens() {
-      ctx.fillStyle = 'silver';
-      shurikens.forEach(s => ctx.fillRect(s.x, s.y, 8, 8));
+    function drawZombieHealthBar(z) {
+      // Zombi can barı
+      ctx.fillStyle = 'red';
+      ctx.fillRect(z.x, z.y - 12, z.width, 6);
+      ctx.fillStyle = 'lime';
+      ctx.fillRect(z.x, z.y - 12, z.width * (z.hp / z.maxHp), 6);
+      ctx.strokeStyle = '#222';
+      ctx.strokeRect(z.x, z.y - 12, z.width, 6);
+    } function drawShurikens() {
+      shurikens.forEach(s => {
+        if (currentWeapon === 'laser') {
+          ctx.fillStyle = 'cyan';
+          ctx.fillRect(s.x, s.y, 12, 3);
+        } else if (currentWeapon === 'shotgun') {
+          ctx.fillStyle = 'orange';
+          ctx.fillRect(s.x, s.y, 8, 8);
+        } else if (currentWeapon === 'rifle') {
+          ctx.fillStyle = 'yellow';
+          ctx.fillRect(s.x, s.y, 10, 5);
+        } else {
+          ctx.fillStyle = 'silver';
+          ctx.fillRect(s.x, s.y, 8, 8);
+        }
+      });
     }
 
     function drawParticles() {
@@ -350,52 +1433,318 @@
       const rect = canvas.getBoundingClientRect();
       mouse.x = e.clientX - rect.left;
       mouse.y = e.clientY - rect.top;
-    });
+    }); function updateGame() {
+      // Eğer oyun durdu ise, ama loop çalışıyorsa, döngüyü devam ettir
+      if (gameOver || gamePaused || shopOpen || healthPackOfferOpen) {
+        if (!gameOver && gameLoopRunning) {
+          requestAnimationFrame(updateGame);
+        }
+        return;
+      }
 
-    function updateGame() {
-      if (gameOver) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // Karakter hareketi: yukarı-aşağı-sağa-sola
-      let moveSpeed = 4;
+      // Screen shake ve visual effects güncelle
+      updateScreenShake();
+      updateVisualEffects();
+
+      ctx.save();
+      applyScreenShake();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);// Karakter hareketi: yukarı-aşağı-sağa-sola (yükseltme ile hız)
+      let moveSpeed = 2.5 + playerUpgrades.speedBonus;
+      // Arrow tuşları
       if (keys['ArrowUp']) player.y -= moveSpeed;
       if (keys['ArrowDown']) player.y += moveSpeed;
-      if (keys['ArrowLeft']) player.x -= moveSpeed;
-      if (keys['ArrowRight']) player.x += moveSpeed;
+      if (keys['ArrowLeft']) {
+        player.x -= moveSpeed;
+        playerDirection = -1; // Sola bak
+      }
+      if (keys['ArrowRight']) {
+        player.x += moveSpeed;
+        playerDirection = 1; // Sağa bak
+      }
+      // WASD tuşları
+      if (keys['w'] || keys['W']) player.y -= moveSpeed;
+      if (keys['s'] || keys['S']) player.y += moveSpeed;
+      if (keys['a'] || keys['A']) {
+        player.x -= moveSpeed;
+        playerDirection = -1; // Sola bak
+      }
+      if (keys['d'] || keys['D']) {
+        player.x += moveSpeed;
+        playerDirection = 1; // Sağa bak
+      }
       if (player.y < 0) player.y = 0;
       if (player.y > canvas.height - player.height) player.y = canvas.height - player.height;
       if (player.x < 0) player.x = 0;
-      if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
-      drawPlayer();
+      if (player.x > canvas.width - player.width) player.x = canvas.width - player.width; drawPlayer();
+
       // Mermileri hareket ettir
       shurikens.forEach(s => {
         s.x += s.vx;
         s.y += s.vy;
+        if (s.life) s.life--;
       });
-      shurikens = shurikens.filter(s => s.x > -10 && s.x < canvas.width + 10 && s.y > -10 && s.y < canvas.height + 10);
+      shurikens = shurikens.filter(s =>
+        (s.x > -10 && s.x < canvas.width + 10 && s.y > -10 && s.y < canvas.height + 10) &&
+        (!s.life || s.life > 0)
+      );
       drawShurikens();
-      // Zombiler round'a göre
-      if (round < 3) {
-        zombies.forEach(z => {
-          z.x -= z.speed;
-          // Oyuncunun y'sine yaklaşsın
-          if (z.y < player.y) z.y += 1.5;
-          else if (z.y > player.y) z.y -= 1.5;
-        });
-      } else {
-        // Her yerden gelen zombiler (oyuncuya yaklaşır)
-        zombies.forEach(z => {
-          let dx = player.x - z.x;
-          let dy = player.y - z.y;
-          let dist = Math.sqrt(dx * dx + dy * dy);
-          z.x += (dx / dist) * z.speed;
-          z.y += (dy / dist) * z.speed;
-        });
-      }
-      drawZombies();
+
+      // YENİ ZOMBİ TİPLERİNİ HAREKET ETTİR
+
+      // Hızlı zombiler
+      fastZombies.forEach(z => {
+        let dx = player.x - z.x;
+        let dy = player.y - z.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        let speedMultiplier = activePowerUps.slowMotion.active ? 0.3 : 1;
+        z.x += (dx / dist) * z.speed * speedMultiplier;
+        z.y += (dy / dist) * z.speed * speedMultiplier;
+      });
+
+      // Zırhlı zombiler
+      armoredZombies.forEach(z => {
+        let dx = player.x - z.x;
+        let dy = player.y - z.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        let speedMultiplier = activePowerUps.slowMotion.active ? 0.3 : 1;
+        z.x += (dx / dist) * z.speed * speedMultiplier;
+        z.y += (dy / dist) * z.speed * speedMultiplier;
+      });
+
+      // Bomba zombiler
+      bomberZombies.forEach(z => {
+        let dx = player.x - z.x;
+        let dy = player.y - z.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        let speedMultiplier = activePowerUps.slowMotion.active ? 0.3 : 1;
+        z.x += (dx / dist) * z.speed * speedMultiplier;
+        z.y += (dy / dist) * z.speed * speedMultiplier;
+
+        // Bomba zombisi oyuncuya çok yaklaşırsa patlasın
+        if (dist < 60) {
+          explodeBomberZombie(z);
+        }
+      });
+
+      // Sürünen zombiler
+      crawlerZombies.forEach(z => {
+        let dx = player.x - z.x;
+        let dy = player.y - z.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        let speedMultiplier = activePowerUps.slowMotion.active ? 0.3 : 1;
+        z.x += (dx / dist) * z.speed * speedMultiplier;
+        z.y += (dy / dist) * z.speed * speedMultiplier;
+      });
+      // Eski zombi hareketi - HER ZAMAN SAĞDAN SOL
+      zombies.forEach(z => {
+        let speedMultiplier = activePowerUps.slowMotion.active ? 0.3 : 1;
+        z.x -= z.speed * speedMultiplier;
+        // Oyuncunun y'sine yaklaşsın
+        if (z.y < player.y) z.y += 1.5 * speedMultiplier;
+        else if (z.y > player.y) z.y -= 1.5 * speedMultiplier;
+      }); drawZombies();
       drawParticles();
       updateParticles();
       drawPowerUp();
       checkPowerUpCollect();
+      drawHealthPack();
+      checkHealthPackCollect();
+      drawVisualEffects(); // Yeni visual effects çiz
+
+      // Electric Aura power-up etkisi
+      if (activePowerUps.electricAura.active) {
+        let auraRadius = 80;
+        [...zombies, ...bossZombies, ...fastZombies, ...armoredZombies, ...bomberZombies, ...crawlerZombies].forEach(zombie => {
+          let dx = zombie.x - player.x;
+          let dy = zombie.y - player.y;
+          let distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < auraRadius) {
+            zombie.hp -= 2; // Sürekli hasar
+            addVisualEffect('lightning', zombie.x + zombie.width / 2, zombie.y + zombie.height / 2);
+            if (zombie.hp <= 0) {
+              killZombie(zombie);
+            }
+          }
+        });
+
+        // Aura görsel efekti
+        ctx.save();
+        ctx.strokeStyle = 'cyan';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.arc(player.x + player.width / 2, player.y + player.height / 2, auraRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }// Boss zombilerin hareketi
+      bossZombies.forEach((boss, bi) => {
+        let dx = player.x - boss.x;
+        let dy = player.y - boss.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        boss.x += (dx / dist) * boss.speed;
+        boss.y += (dy / dist) * boss.speed;
+
+        // Boss yönünü belirle (oyuncuya göre)
+        if (dx > 0) {
+          boss.direction = 1; // Sağa bak
+        } else {
+          boss.direction = -1; // Sola bak
+        }
+
+        // Boss özel saldırı (her 3 saniyede bir)
+        if (Date.now() - boss.lastAttack > 3000) {
+          boss.lastAttack = Date.now();
+          // Boss mermi atar
+          for (let i = 0; i < 5; i++) {
+            let angle = (Math.PI * 2 / 5) * i;
+            // Boss mermileri (oyuncu mermilerinden farklı dizi)
+            if (!window.bossBullets) window.bossBullets = [];
+            window.bossBullets.push({
+              x: boss.x + boss.width / 2,
+              y: boss.y + boss.height / 2,
+              vx: Math.cos(angle) * 3,
+              vy: Math.sin(angle) * 3,
+              life: 180
+            });
+          }
+        }
+        // Boss ile oyuncu çarpışması
+        if (boss.x < player.x + player.width &&
+          boss.x + boss.width > player.x &&
+          boss.y < player.y + player.height &&
+          boss.y + boss.height > player.y) {
+          player.health -= Math.floor(player.maxHealth / 2); // Boss yarım can hasar verir
+          if (player.health <= 0) endGame();
+          // Boss çarpınca biraz geri iter
+          boss.x -= 20;
+          boss.y -= 10;
+        }
+      });
+
+      // Boss mermilerini çiz ve hareket ettir
+      if (window.bossBullets) {
+        window.bossBullets = window.bossBullets.filter(b => b.life > 0);
+        window.bossBullets.forEach(b => {
+          b.x += b.vx;
+          b.y += b.vy;
+          b.life--;
+          // Boss mermi çizimi
+          ctx.fillStyle = 'red';
+          ctx.fillRect(b.x, b.y, 6, 6);
+
+          // Oyuncuya çarparsa hasar ver
+          if (b.x > player.x && b.x < player.x + player.width &&
+            b.y > player.y && b.y < player.y + player.height) {
+            player.health -= 15;
+            b.life = 0;
+            if (player.health <= 0) endGame();
+          }
+        });
+      }
+      // YENİ ZOMBİ TİPLERİ İLE MERMİ ÇARPIŞMALARI
+
+      // Hızlı zombiler ile mermi çarpışması
+      fastZombies.forEach((z, zi) => {
+        shurikens.forEach((s, si) => {
+          if (s.x < z.x + z.width && s.x + 8 > z.x && s.y < z.y + z.height && s.y + 8 > z.y) {
+            let damage = s.damage || weapons[currentWeapon].damage;
+            if (playerUpgrades.luckyShot && Math.random() < 0.2) damage *= 2;
+
+            z.hp -= damage;
+            shurikens.splice(si, 1);
+
+            if (z.hp <= 0) {
+              fastZombies.splice(zi, 1);
+              score += 15;
+              zombiesKilled++;
+
+              let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+              savedCoins += 20; // Hızlı zombi daha fazla token verir
+              localStorage.setItem('coins', savedCoins);
+
+              player.xp += 20;
+              checkLevelUp();
+              spawnParticles(z.x + z.width / 2, z.y + z.height / 2);
+            }
+          }
+        });
+      });
+
+      // Zırhlı zombiler ile mermi çarpışması
+      armoredZombies.forEach((z, zi) => {
+        shurikens.forEach((s, si) => {
+          if (s.x < z.x + z.width && s.x + 8 > z.x && s.y < z.y + z.height && s.y + 8 > z.y) {
+            let damage = s.damage || weapons[currentWeapon].damage;
+            if (playerUpgrades.luckyShot && Math.random() < 0.2) damage *= 2;
+
+            // Zırh hasarı azaltır
+            damage *= (1 - z.armor);
+            z.hp -= damage;
+            shurikens.splice(si, 1);
+
+            if (z.hp <= 0) {
+              armoredZombies.splice(zi, 1);
+              score += 25;
+              zombiesKilled++;
+
+              let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+              savedCoins += 30; // Zırhlı zombi en fazla token verir
+              localStorage.setItem('coins', savedCoins);
+
+              player.xp += 30;
+              checkLevelUp();
+              spawnParticles(z.x + z.width / 2, z.y + z.height / 2);
+            }
+          }
+        });
+      });
+
+      // Bomba zombiler ile mermi çarpışması
+      bomberZombies.forEach((z, zi) => {
+        shurikens.forEach((s, si) => {
+          if (s.x < z.x + z.width && s.x + 8 > z.x && s.y < z.y + z.height && s.y + 8 > z.y) {
+            let damage = s.damage || weapons[currentWeapon].damage;
+            if (playerUpgrades.luckyShot && Math.random() < 0.2) damage *= 2;
+
+            z.hp -= damage;
+            shurikens.splice(si, 1);
+
+            if (z.hp <= 0) {
+              explodeBomberZombie(z); // Öldüğünde patlar
+            }
+          }
+        });
+      });
+
+      // Sürünen zombiler ile mermi çarpışması
+      crawlerZombies.forEach((z, zi) => {
+        shurikens.forEach((s, si) => {
+          if (s.x < z.x + z.width && s.x + 8 > z.x && s.y < z.y + z.height && s.y + 8 > z.y) {
+            let damage = s.damage || weapons[currentWeapon].damage;
+            if (playerUpgrades.luckyShot && Math.random() < 0.2) damage *= 2;
+
+            z.hp -= damage;
+            shurikens.splice(si, 1);
+
+            if (z.hp <= 0) {
+              crawlerZombies.splice(zi, 1);
+              score += 10;
+              zombiesKilled++;
+
+              let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+              savedCoins += 12;
+              localStorage.setItem('coins', savedCoins);
+
+              player.xp += 12;
+              checkLevelUp();
+              spawnParticles(z.x + z.width / 2, z.y + z.height / 2);
+            }
+          }
+        });
+      });
+
+      // ESKİ ZOMBİLER İLE MERMİ ÇARPIŞMASI
       zombies.forEach((z, zi) => {
         shurikens.forEach((s, si) => {
           if (
@@ -404,23 +1753,86 @@
             s.y < z.y + z.height &&
             s.y + 8 > z.y
           ) {
-            let damage = doubleShotActive ? doubleBulletDamage : normalBulletDamage;
-            z.hp -= damage;
+            let damage = s.damage || (doubleShotActive ? doubleBulletDamage : normalBulletDamage);
+
+            // Şanslı atış kontrolü
+            if (playerUpgrades.luckyShot && Math.random() < 0.2) {
+              damage *= 2;
+              // Şanslı atış efekti
+              const luckyDiv = document.createElement('div');
+              luckyDiv.style.position = 'absolute';
+              luckyDiv.style.left = (z.x + z.width / 2) + 'px';
+              luckyDiv.style.top = z.y + 'px';
+              luckyDiv.style.color = 'gold';
+              luckyDiv.style.fontSize = '20px';
+              luckyDiv.style.fontWeight = 'bold';
+              luckyDiv.style.pointerEvents = 'none';
+              luckyDiv.style.zIndex = '1000';
+              luckyDiv.textContent = 'ŞANSLI!';
+              document.body.appendChild(luckyDiv);
+              setTimeout(() => {
+                if (luckyDiv.parentNode) luckyDiv.parentNode.removeChild(luckyDiv);
+              }, 1000);
+            } z.hp -= damage;
             shurikens.splice(si, 1);
+
+            // Ses efekti çal
+            if (synthSounds && soundManager.effectsVolume > 0) {
+              synthSounds.zombieDeathSound();
+            }
+
             if (z.hp <= 0) {
               zombies.splice(zi, 1);
               score += 5;
               zombiesKilled++;
-              // Power-up: Her 6 zombi öldürünce tekrar gelsin
+              // XP kazanımı
+              player.xp += 15;
+              if (player.xp >= player.xpToNext) {
+                player.level++;
+                player.xp = 0;
+                player.xpToNext += 50;
+                player.maxHealth += 20;
+                player.health = player.maxHealth; // Level atlarken tam can
+
+                // Level atlarken mesaj
+                const levelUpDiv = document.createElement('div');
+                levelUpDiv.style.position = 'absolute';
+                levelUpDiv.style.top = '25%';
+                levelUpDiv.style.left = '50%';
+                levelUpDiv.style.transform = 'translate(-50%, -50%)';
+                levelUpDiv.style.color = 'gold';
+                levelUpDiv.style.fontSize = '32px';
+                levelUpDiv.style.fontWeight = 'bold';
+                levelUpDiv.style.textShadow = '2px 2px 8px #000';
+                levelUpDiv.textContent = `LEVEL UP! (${player.level})`;
+                document.body.appendChild(levelUpDiv);
+                setTimeout(() => {
+                  if (levelUpDiv.parentNode) levelUpDiv.parentNode.removeChild(levelUpDiv);
+                }, 2000);
+              }              // Power-up: Her 6 zombi öldürünce tekrar gelsin
               if (zombiesKilled % 6 === 0 && (!powerUp || !powerUp.active) && !doubleShotActive) {
-                spawnPowerUp();
+                // %50 şansla yeni power-up, %50 şansla eski
+                if (Math.random() < 0.5) {
+                  spawnNewPowerUp();
+                } else {
+                  spawnPowerUp();
+                }
               }
-              let savedCoins = parseInt(localStorage.getItem('coins') || '0');
-              savedCoins++;
+              // Can paketi: Her 6 zombi öldürünce can paketi spawn olsun
+              if (zombiesKilled % 6 === 0 && (!healthPack || !healthPack.active)) {
+                spawnHealthPack();
+              } let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+              // Her zombi öldürünce 15 token
+              savedCoins += 15;
               localStorage.setItem('coins', savedCoins);
-              spawnParticles(z.x + z.width / 2, z.y + z.height / 2);
-              if (round <= roundThresholds.length && zombiesKilled >= roundThresholds[round - 1]) {
+              spawnParticles(z.x + z.width / 2, z.y + z.height / 2); if (round <= roundThresholds.length && zombiesKilled >= roundThresholds[round - 1]) {
                 round++;
+
+                // GÖREVLERİ GÜNCELLe - Round tamamlandı
+                if (typeof window !== 'undefined' && window.dispatchEvent) {
+                  window.dispatchEvent(new CustomEvent('roundCompleted'));
+                }
+
                 if (round > maxRounds) {
                   endGame();
                   setTimeout(() => {
@@ -441,27 +1853,119 @@
                     }, 2000);
                   }, 500);
                   return;
-                }
+                }                // Harita değişimi ve round yazısını göster
+                setBackground(round);
                 showRoundText();
-                if (round === 2) {
-                  bulletDropActive = true;
-                  bulletDrops = [];
-                  setTimeout(spawnBulletDrop, 3000);
-                  setTimeout(spawnArmorDrop, 15000);
+
+                // Progressive boss spawn sistemi: Round 2'den başlayarak her round'da artan sayıda boss
+                if (round >= 2) {
+                  // Round 2'de 1 boss, Round 3'te 2 boss, Round 4'te 3 boss vs.
+                  let bossCount = round - 1;
+
+                  setTimeout(() => {
+                    for (let i = 0; i < bossCount; i++) {
+                      // Her boss 1 saniye arayla spawn olsun
+                      setTimeout(() => {
+                        spawnBoss();
+                      }, i * 1000);
+                    }
+                  }, 3000); // 3 saniye sonra boss(lar) gelsin
                 }
               }
               updateUI();
             }
           }
+        });        // YENİ ZOMBİ TİPLERİ İLE OYUNCU ÇARPIŞMALARI
+
+        // Hızlı zombiler ile oyuncu çarpışması
+        fastZombies.forEach((z, zi) => {
+          if (z.x <= player.x + player.width && z.x + z.width >= player.x &&
+            z.y <= player.y + player.height && z.y + z.height >= player.y) {
+            if (!activePowerUps.shield.active && !playerImmune) {
+              if (hasArmor) {
+                fastZombies.splice(zi, 1);
+                hasArmor = false;
+                showMessage('🛡️ ZIRH KAYBOLDU!', 'orange');
+              } else {
+                player.health -= 25;
+                if (player.health <= 0) endGame();
+                fastZombies.splice(zi, 1);
+              }
+            } else {
+              fastZombies.splice(zi, 1); // Shield varsa zombi ölür
+            }
+            updateUI();
+          }
         });
 
+        // Zırhlı zombiler ile oyuncu çarpışması
+        armoredZombies.forEach((z, zi) => {
+          if (z.x <= player.x + player.width && z.x + z.width >= player.x &&
+            z.y <= player.y + player.height && z.y + z.height >= player.y) {
+            if (!activePowerUps.shield.active && !playerImmune) {
+              if (hasArmor) {
+                armoredZombies.splice(zi, 1);
+                hasArmor = false;
+                showMessage('🛡️ ZIRH KAYBOLDU!', 'orange');
+              } else {
+                player.health -= 40; // Daha fazla hasar
+                if (player.health <= 0) endGame();
+                armoredZombies.splice(zi, 1);
+              }
+            } else {
+              armoredZombies.splice(zi, 1);
+            }
+            updateUI();
+          }
+        });
+
+        // Sürünen zombiler ile oyuncu çarpışması
+        crawlerZombies.forEach((z, zi) => {
+          if (z.x <= player.x + player.width && z.x + z.width >= player.x &&
+            z.y <= player.y + player.height && z.y + z.height >= player.y) {
+            if (!activePowerUps.shield.active && !playerImmune) {
+              if (hasArmor) {
+                crawlerZombies.splice(zi, 1);
+                hasArmor = false;
+                showMessage('🛡️ ZIRH KAYBOLDU!', 'orange');
+              } else {
+                player.health -= 15;
+                if (player.health <= 0) endGame();
+                crawlerZombies.splice(zi, 1);
+              }
+            } else {
+              crawlerZombies.splice(zi, 1);
+            }
+            updateUI();
+          }
+        });
+
+        // ESKİ ZOMBİLER İLE OYUNCU ÇARPIŞMASI
         if (z.x <= player.x + player.width &&
           z.x + z.width >= player.x &&
           z.y <= player.y + player.height &&
           z.y + z.height >= player.y) {
-          if (armorActive) {
+          if (hasArmor) {
+            // Zırh varsa zombi öldür ve zırhı kaldır
             zombies.splice(zi, 1);
-            armorActive = false;
+            hasArmor = false;
+
+            // Zırh kayboldu mesajı
+            const armorLostDiv = document.createElement('div');
+            armorLostDiv.style.position = 'absolute';
+            armorLostDiv.style.top = '25%';
+            armorLostDiv.style.left = '50%';
+            armorLostDiv.style.transform = 'translate(-50%, -50%)';
+            armorLostDiv.style.color = 'orange';
+            armorLostDiv.style.fontSize = '24px';
+            armorLostDiv.style.fontWeight = 'bold';
+            armorLostDiv.style.textShadow = '2px 2px 8px #000';
+            armorLostDiv.style.zIndex = '1000';
+            armorLostDiv.textContent = '🛡️ ZIRH KAYBOLDU!';
+            document.body.appendChild(armorLostDiv);
+            setTimeout(() => {
+              if (armorLostDiv.parentNode) armorLostDiv.parentNode.removeChild(armorLostDiv);
+            }, 2000);
           } else {
             let damage = z.type === 1 ? 30 : 20;
             player.health -= damage;
@@ -469,25 +1973,141 @@
             player.coins += 1;
             zombies.splice(zi, 1);
             if (player.health <= 0) endGame();
-            updateUI();
           }
+          updateUI();
         }
       });
 
-      updateUI();
-      requestAnimationFrame(updateGame);
-    }
+      // Boss zombileri ile oyuncu mermilerinin çarpışması
+      bossZombies.forEach((boss, bi) => {
+        shurikens.forEach((s, si) => {
+          if (
+            s.x < boss.x + boss.width &&
+            s.x + 8 > boss.x &&
+            s.y < boss.y + boss.height &&
+            s.y + 8 > boss.y
+          ) {
+            let damage = s.damage || (doubleShotActive ? doubleBulletDamage : normalBulletDamage);
 
-    function spawnZombie() {
+            // Şanslı atış kontrolü boss için de
+            if (playerUpgrades.luckyShot && Math.random() < 0.2) {
+              damage *= 2;
+              const luckyDiv = document.createElement('div');
+              luckyDiv.style.position = 'absolute';
+              luckyDiv.style.left = (boss.x + boss.width / 2) + 'px';
+              luckyDiv.style.top = boss.y + 'px';
+              luckyDiv.style.color = 'gold';
+              luckyDiv.style.fontSize = '24px';
+              luckyDiv.style.fontWeight = 'bold';
+              luckyDiv.style.pointerEvents = 'none';
+              luckyDiv.style.zIndex = '1000';
+              luckyDiv.textContent = 'ŞANSLI BOSS!';
+              document.body.appendChild(luckyDiv);
+              setTimeout(() => {
+                if (luckyDiv.parentNode) luckyDiv.parentNode.removeChild(luckyDiv);
+              }, 1000);
+            }
+
+            boss.hp -= damage;
+            shurikens.splice(si, 1);
+            spawnParticles(s.x, s.y); // Boss vurulduğunda parçacık efekti
+
+            if (boss.hp <= 0) {
+              bossZombies.splice(bi, 1);
+              score += 100; // Boss öldürmek büyük puan verir
+              zombiesKilled += 5; // Boss 5 zombi değerinde              // Boss öldürmek büyük XP verir
+              player.xp += 100;
+              if (player.xp >= player.xpToNext) {
+                player.level++;
+                player.xp = 0;
+                player.xpToNext += 50;
+                player.maxHealth += 20;
+                player.health = player.maxHealth;
+
+                // Level up bildirimi
+                const levelUpDiv = document.createElement('div');
+                levelUpDiv.style.position = 'absolute';
+                levelUpDiv.style.top = '25%';
+                levelUpDiv.style.left = '50%';
+                levelUpDiv.style.transform = 'translate(-50%, -50%)';
+                levelUpDiv.style.color = 'gold';
+                levelUpDiv.style.fontSize = '32px';
+                levelUpDiv.style.fontWeight = 'bold';
+                levelUpDiv.style.textShadow = '2px 2px 8px #000';
+                levelUpDiv.textContent = `LEVEL UP! (${player.level})`;
+                document.body.appendChild(levelUpDiv);
+                setTimeout(() => {
+                  if (levelUpDiv.parentNode) levelUpDiv.parentNode.removeChild(levelUpDiv);
+                }, 2000);
+              }
+
+              // Boss öldürüldü mesajı
+              const bossKilledDiv = document.createElement('div');
+              bossKilledDiv.style.position = 'absolute';
+              bossKilledDiv.style.top = '35%';
+              bossKilledDiv.style.left = '50%';
+              bossKilledDiv.style.transform = 'translate(-50%, -50%)';
+              bossKilledDiv.style.color = 'lime';
+              bossKilledDiv.style.fontSize = '40px';
+              bossKilledDiv.style.fontWeight = 'bold';
+              bossKilledDiv.style.textShadow = '3px 3px 10px #000';
+              bossKilledDiv.textContent = 'BOSS ÖLDÜRÜLDÜ! +100 PUAN';
+              document.body.appendChild(bossKilledDiv);
+              setTimeout(() => {
+                if (bossKilledDiv.parentNode) bossKilledDiv.parentNode.removeChild(bossKilledDiv);
+              }, 3000);
+
+              // Boss öldürülünce büyük patlatma efekti
+              for (let i = 0; i < 30; i++) {
+                particles.push({
+                  x: boss.x + boss.width / 2,
+                  y: boss.y + boss.height / 2,
+                  vx: (Math.random() - 0.5) * 8,
+                  vy: (Math.random() - 0.5) * 8,
+                  life: 60
+                });
+              } let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+              savedCoins += 75; // Boss öldürmek 75 jeton verir
+              localStorage.setItem('coins', savedCoins);
+              updateUI();
+            }
+          }
+        });
+      }); updateUI();
+      ctx.restore(); // Screen shake reset
+
+      if (!gameOver && gameLoopRunning) {
+        requestAnimationFrame(updateGame);
+      } else if (gameOver) {
+        gameLoopRunning = false;
+      }
+    } function spawnZombie() {
       const type = Math.random() < 0.5 ? 1 : 2;
       let hp = 200;
       let maxHp = hp;
       // Zombi hızı sabit: 2.5 (her round)
-      let zombieSpeed = 2.5;
+      let zombieSpeed = 2.5;      // Round 2+ da yeni zombi tiplerini spawn et
+      if (round >= 2) {
+        let spawnChance = Math.random();
+        if (spawnChance < 0.2) {
+          spawnFastZombie();
+          return;
+        } else if (spawnChance < 0.35) {
+          spawnArmoredZombie();
+          return;
+        } else if (spawnChance < 0.5) {
+          spawnBomberZombie();
+          return;
+        } else if (spawnChance < 0.65) {
+          spawnCrawlerZombie();
+          return;
+        }
+      }
+
       if (round < 3) {
         let zy = Math.random() * (canvas.height - 64);
         zombies.push({
-          x: canvas.width + 64,
+          x: canvas.width + 120,
           y: zy,
           width: 64,
           height: 64,
@@ -499,10 +2119,10 @@
       } else {
         let spawnEdge = Math.floor(Math.random() * 4);
         let zx, zy;
-        if (spawnEdge === 0) { zx = -64; zy = Math.random() * (canvas.height - 64); }
-        else if (spawnEdge === 1) { zx = canvas.width + 64; zy = Math.random() * (canvas.height - 64); }
-        else if (spawnEdge === 2) { zx = Math.random() * (canvas.width - 64); zy = -64; }
-        else { zx = Math.random() * (canvas.width - 64); zy = canvas.height + 64; }
+        if (spawnEdge === 0) { zx = -120; zy = Math.random() * (canvas.height - 64); }
+        else if (spawnEdge === 1) { zx = canvas.width + 120; zy = Math.random() * (canvas.height - 64); }
+        else if (spawnEdge === 2) { zx = Math.random() * (canvas.width - 64); zy = -120; }
+        else { zx = Math.random() * (canvas.width - 64); zy = canvas.height + 120; }
         zombies.push({
           x: zx,
           y: zy,
@@ -514,51 +2134,235 @@
           type: type
         });
       }
-    }
+    }    // Boss zombi spawn
+    function spawnBoss() {
+      let boss = {
+        x: canvas.width + 150,
+        y: Math.random() * (canvas.height - 150),
+        width: 100,
+        height: 100,
+        speed: 1.5,
+        hp: 1000,
+        maxHp: 1000,
+        type: 'boss',
+        lastAttack: 0,
+        direction: 1 // Başlangıçta sağa baksın
+      };
+      bossZombies.push(boss);
 
-    function spawnPowerUp() {
+      // Boss geldi uyarısı
+      const bossAlert = document.createElement('div');
+      bossAlert.style.position = 'absolute';
+      bossAlert.style.top = '30%';
+      bossAlert.style.left = '50%';
+      bossAlert.style.transform = 'translate(-50%, -50%)';
+      bossAlert.style.color = 'red';
+      bossAlert.style.fontSize = '48px';
+      bossAlert.style.fontWeight = 'bold';
+      bossAlert.style.textShadow = '3px 3px 10px #000';
+      bossAlert.style.zIndex = '1000';
+      bossAlert.textContent = 'BOSS ZOMBI GELDİ!';
+      document.body.appendChild(bossAlert);
+      setTimeout(() => {
+        if (bossAlert.parentNode) bossAlert.parentNode.removeChild(bossAlert);
+      }, 3000);
+    } function spawnPowerUp() {
       powerUp = {
-        x: Math.random() * (canvas.width - 40) + 20,
-        y: Math.random() * (canvas.height - 40) + 20,
+        x: Math.random() * (canvas.width - 80) + 40,
+        y: Math.random() * (canvas.height - 80) + 40,
         size: 32,
         active: true
       };
-    }
-
-    function drawPowerUp() {
+    } function drawPowerUp() {
       if (powerUp && powerUp.active) {
         ctx.save();
         ctx.beginPath();
         ctx.arc(powerUp.x, powerUp.y, powerUp.size / 2, 0, 2 * Math.PI);
-        ctx.fillStyle = 'gold';
-        ctx.shadowColor = 'yellow';
+
+        // Power-up türüne göre renk
+        switch (powerUp.type) {
+          case 'shield':
+            ctx.fillStyle = 'blue';
+            ctx.shadowColor = 'lightblue';
+            break;
+          case 'electricAura':
+            ctx.fillStyle = 'cyan';
+            ctx.shadowColor = 'white';
+            break;
+          case 'autoAim':
+            ctx.fillStyle = 'lime';
+            ctx.shadowColor = 'lightgreen';
+            break;
+          case 'slowMotion':
+            ctx.fillStyle = 'purple';
+            ctx.shadowColor = 'violet';
+            break;
+          default:
+            ctx.fillStyle = 'gold';
+            ctx.shadowColor = 'yellow';
+        }
+
         ctx.shadowBlur = 20;
         ctx.fill();
         ctx.restore();
-        ctx.font = '16px monospace';
-        ctx.fillStyle = 'black';
-        ctx.fillText('2x', powerUp.x - 12, powerUp.y + 6);
-      }
-    }
 
-    function checkPowerUpCollect() {
+        // Icon çiz
+        ctx.font = '16px monospace';
+        ctx.fillStyle = 'white';
+        let icon = '';
+        switch (powerUp.type) {
+          case 'shield': icon = '🛡️'; break;
+          case 'electricAura': icon = '⚡'; break;
+          case 'autoAim': icon = '🎯'; break;
+          case 'slowMotion': icon = '⏰'; break;
+          default: icon = '2x';
+        }
+        ctx.fillText(icon, powerUp.x - 8, powerUp.y + 6);
+      }
+    } function checkPowerUpCollect() {
       if (powerUp && powerUp.active) {
         let px = player.x + player.width / 2;
         let py = player.y + player.height / 2;
         let dist = Math.sqrt((powerUp.x - px) ** 2 + (powerUp.y - py) ** 2);
         if (dist < player.width / 2 + powerUp.size / 2) {
           powerUp.active = false;
-          doubleShotActive = true;
-          clearTimeout(doubleShotTimeout);
-          doubleShotTimeout = setTimeout(() => {
-            doubleShotActive = false;
-          }, 5000); // 5 saniye aktif
+
+          // Power-up ses efekti
+          if (synthSounds && soundManager.effectsVolume > 0) {
+            synthSounds.powerUpSound();
+          }
+
+          // Yeni power-up türlerine göre aktivasyon
+          if (powerUp.type && powerUp.type !== '2x') {
+            activatePowerUp(powerUp.type);
+          } else {
+            // Eski 2x power-up
+            doubleShotActive = true;
+            clearTimeout(doubleShotTimeout);
+            doubleShotTimeout = setTimeout(() => {
+              doubleShotActive = false;
+            }, 5000); // 5 saniye aktif
+          }
         }
       }
     }
 
-    function endGame() {
+    // Can paketi fonksiyonları
+    function spawnHealthPack() {
+      healthPack = {
+        x: Math.random() * (canvas.width - 80) + 40,
+        y: Math.random() * (canvas.height - 80) + 40,
+        size: 32,
+        active: true
+      };
+    }
+
+    function drawHealthPack() {
+      if (healthPack && healthPack.active) {
+        ctx.save();
+        // Yuvarlak beyaz arka plan
+        ctx.beginPath();
+        ctx.arc(healthPack.x, healthPack.y, healthPack.size / 2, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.shadowColor = 'red';
+        ctx.shadowBlur = 15;
+        ctx.fill();
+        ctx.restore();
+
+        // Beyaz + işareti
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        // Yatay çizgi
+        ctx.moveTo(healthPack.x - 10, healthPack.y);
+        ctx.lineTo(healthPack.x + 10, healthPack.y);
+        // Dikey çizgi
+        ctx.moveTo(healthPack.x, healthPack.y - 10);
+        ctx.lineTo(healthPack.x, healthPack.y + 10);
+        ctx.stroke();
+      }
+    }
+
+    function checkHealthPackCollect() {
+      if (healthPack && healthPack.active) {
+        let px = player.x + player.width / 2;
+        let py = player.y + player.height / 2;
+        let dist = Math.sqrt((healthPack.x - px) ** 2 + (healthPack.y - py) ** 2);
+        if (dist < player.width / 2 + healthPack.size / 2) {
+          healthPack.active = false;
+          showHealthPackOffer();
+        }
+      }
+    } function showHealthPackOffer() {
+      healthPackOfferOpen = true;
+      stopZombieSpawn(); // Zombi spawn'ı durdur
+      healthPackOffer.style.display = 'flex';
+    } function closeHealthPackOffer() {
+      healthPackOfferOpen = false;
+      healthPackOffer.style.display = 'none';
+      startZombieSpawn(); // Zombi spawn'ı tekrar başlat
+      // Can paketi kapandığında oyun döngüsünü tekrar başlat
+      if (!gameOver && !gamePaused && !shopOpen && !gameLoopRunning) {
+        gameLoopRunning = true;
+        updateGame();
+      }
+    } function buyHealthPack() {
+      let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+      if (savedCoins >= 15) {
+        savedCoins -= 15;
+        localStorage.setItem('coins', savedCoins);
+
+        // Canı fullele
+        player.health = player.maxHealth;
+
+        // Başarı mesajı
+        const successDiv = document.createElement('div');
+        successDiv.style.position = 'absolute';
+        successDiv.style.top = '30%';
+        successDiv.style.left = '50%';
+        successDiv.style.transform = 'translate(-50%, -50%)';
+        successDiv.style.color = 'lime';
+        successDiv.style.fontSize = '32px';
+        successDiv.style.fontWeight = 'bold';
+        successDiv.style.textShadow = '2px 2px 8px #000';
+        successDiv.style.zIndex = '1001';
+        successDiv.textContent = '❤️ CAN YENİLENDİ!';
+        document.body.appendChild(successDiv);
+        setTimeout(() => {
+          if (successDiv.parentNode) successDiv.parentNode.removeChild(successDiv);
+        }, 2000);
+
+        updateUI();
+        closeHealthPackOffer();
+        // updateGame() çağırmasını kaldırdık - zaten döngü devam ediyor
+      } else {
+        // Yetersiz jeton mesajı
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'absolute';
+        errorDiv.style.top = '30%';
+        errorDiv.style.left = '50%';
+        errorDiv.style.transform = 'translate(-50%, -50%)';
+        errorDiv.style.color = 'red';
+        errorDiv.style.fontSize = '24px';
+        errorDiv.style.fontWeight = 'bold';
+        errorDiv.style.textShadow = '2px 2px 8px #000';
+        errorDiv.style.zIndex = '1001';
+        errorDiv.textContent = 'YETERSİZ JETON! (15 gerekli)';
+        document.body.appendChild(errorDiv);
+        setTimeout(() => {
+          if (errorDiv.parentNode) errorDiv.parentNode.removeChild(errorDiv);
+        }, 2000);
+      }
+    } function endGame() {
       gameOver = true;
+      gameLoopRunning = false; // Animasyon döngüsünü durdur
+      stopZombieSpawn(); // Zombi spawn'ı durdur
+
+      // Oyun bittiğinde direk ana menüye dön
+      setTimeout(() => {
+        backToMainMenu();
+      }, 3000); // 3 saniye sonra ana menüye dön
+
       gameOverEl.style.display = 'block';
       const highScore = parseInt(localStorage.getItem('highScore') || '0');
       if (score > highScore) {
@@ -568,62 +2372,325 @@
         finalScoreEl.textContent = `Skorun: ${score} | Rekor: ${highScore}`;
       }
       highScoreEl.textContent = localStorage.getItem('highScore');
+    }// Mağaza fonksiyonları
+    function openShop() {
+      shopOpen = true;
+      stopZombieSpawn(); // Zombi spawn'ı durdur
+      shopScreen.style.display = 'flex';
+      updateShopDisplay();
+    } function closeShop() {
+      shopOpen = false;
+      shopScreen.style.display = 'none';
+      startZombieSpawn(); // Zombi spawn'ı tekrar başlat
+      // Oyun döngüsünü tekrar başlat
+      if (!gameOver && !gamePaused && !healthPackOfferOpen && !gameLoopRunning) {
+        gameLoopRunning = true;
+        updateGame();
+      }
+    } function updateShopDisplay() {
+      const shopCoinsEl = document.getElementById('shopCoins');
+      const savedCoins = parseInt(localStorage.getItem('coins') || '0');
+      shopCoinsEl.textContent = savedCoins;
+
+      // Silah durumlarını güncelle
+      document.getElementById('rifleStatus').textContent = weapons.rifle.owned ? 'Sahipsin' : 'Satın alınmadı';
+      document.getElementById('shotgunStatus').textContent = weapons.shotgun.owned ? 'Sahipsin' : 'Satın alınmadı';
+      document.getElementById('laserStatus').textContent = weapons.laser.owned ? 'Sahipsin' : 'Satın alınmadı';
+      document.getElementById('armorStatus').textContent = hasArmor ? 'Üzerinde' : 'Sahip değilsin';
+
+      // Mevcut değerleri güncelle
+      document.getElementById('pistolDamage').textContent = weapons.pistol.damage;
+      document.getElementById('rifleDamage').textContent = weapons.rifle.damage;
+      document.getElementById('shotgunDamage').textContent = weapons.shotgun.damage;
+      document.getElementById('laserDamage').textContent = weapons.laser.damage;
+      document.getElementById('maxHealthDisplay').textContent = player.maxHealth;
+      document.getElementById('speedDisplay').textContent = (2.5 + playerUpgrades.speedBonus).toFixed(1);
     }
 
-    function restartGame() {
+    function purchaseUpgrade(type, cost, upgradeKey, amount) {
+      let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+      if (savedCoins >= cost) {
+        savedCoins -= cost;
+        localStorage.setItem('coins', savedCoins);
+
+        if (type === 'weapon') {
+          weaponUpgrades[upgradeKey] += 1;
+          localStorage.setItem(upgradeKey + 'Upgrade', weaponUpgrades[upgradeKey]);
+          // Silah hasarını güncelle
+          updateWeaponStats();
+        } else if (type === 'player') {
+          if (upgradeKey === 'maxHealthBonus') {
+            playerUpgrades.maxHealthBonus += amount;
+            player.maxHealth += amount;
+            player.health += amount; // Mevcut canı da artır
+            localStorage.setItem('maxHealthBonus', playerUpgrades.maxHealthBonus);
+          } else if (upgradeKey === 'speedBonus') {
+            playerUpgrades.speedBonus += amount;
+            localStorage.setItem('speedBonus', playerUpgrades.speedBonus);
+          } else if (upgradeKey === 'rapidFireBonus') {
+            playerUpgrades.rapidFireBonus += amount;
+            localStorage.setItem('rapidFireBonus', playerUpgrades.rapidFireBonus);
+            updateWeaponStats();
+          } else if (upgradeKey === 'luckyShot') {
+            playerUpgrades.luckyShot = true;
+            localStorage.setItem('luckyShot', 'true');
+          }
+        } updateShopDisplay();
+        updateUI();
+
+        // GÖREVLERİ GÜNCELLe - Eşya satın alındı
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('itemPurchased'));
+        }
+
+        // Satın alma mesajı
+        const purchaseDiv = document.createElement('div');
+        purchaseDiv.style.position = 'absolute';
+        purchaseDiv.style.top = '20%';
+        purchaseDiv.style.left = '50%';
+        purchaseDiv.style.transform = 'translate(-50%, -50%)';
+        purchaseDiv.style.color = 'lime';
+        purchaseDiv.style.fontSize = '24px';
+        purchaseDiv.style.fontWeight = 'bold';
+        purchaseDiv.style.textShadow = '2px 2px 8px #000';
+        purchaseDiv.style.zIndex = '1001';
+        purchaseDiv.textContent = 'SATIN ALINDI!';
+        document.body.appendChild(purchaseDiv);
+        setTimeout(() => {
+          if (purchaseDiv.parentNode) purchaseDiv.parentNode.removeChild(purchaseDiv);
+        }, 1500);
+      } else {
+        // Yetersiz jeton mesajı
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'absolute';
+        errorDiv.style.top = '20%';
+        errorDiv.style.left = '50%';
+        errorDiv.style.transform = 'translate(-50%, -50%)';
+        errorDiv.style.color = 'red';
+        errorDiv.style.fontSize = '24px';
+        errorDiv.style.fontWeight = 'bold';
+        errorDiv.style.textShadow = '2px 2px 8px #000';
+        errorDiv.style.zIndex = '1001';
+        errorDiv.textContent = 'YETERSİZ JETON!';
+        document.body.appendChild(errorDiv);
+        setTimeout(() => {
+          if (errorDiv.parentNode) errorDiv.parentNode.removeChild(errorDiv);
+        }, 1500);
+      }
+    }
+
+    function updateWeaponStats() {
+      weapons.pistol.damage = 70 + (weaponUpgrades.pistol * 10);
+      weapons.rifle.damage = 120 + (weaponUpgrades.rifle * 15);
+      weapons.shotgun.damage = 200 + (weaponUpgrades.shotgun * 20);
+      weapons.laser.damage = 150 + (weaponUpgrades.laser * 18);
+
+      weapons.pistol.fireRate = Math.max(100, 300 - playerUpgrades.rapidFireBonus);
+      weapons.rifle.fireRate = Math.max(50, 150 - playerUpgrades.rapidFireBonus);
+      weapons.shotgun.fireRate = Math.max(200, 800 - playerUpgrades.rapidFireBonus);
+      weapons.laser.fireRate = Math.max(50, 100 - playerUpgrades.rapidFireBonus);
+    } function restartGame() {
       gameOver = false;
+      gamePaused = false;
+      shopOpen = false;
+      healthPackOfferOpen = false;
+      pauseScreen.style.display = 'none';
+      shopScreen.style.display = 'none';
+      healthPackOffer.style.display = 'none';
+
+      // Timeout'ları temizle
+      if (roundTextTimeout) {
+        clearTimeout(roundTextTimeout);
+        roundTextTimeout = null;
+      }
+
+      // Mevcut round text'i kaldır
+      let existingRoundText = document.getElementById('roundText');
+      if (existingRoundText && existingRoundText.parentNode) {
+        existingRoundText.parentNode.removeChild(existingRoundText);
+      }
+
+      // Tüm zombi ve oyun objelerini sıfırla
       zombies = [];
+      bossZombies = [];
+      if (window.bossBullets) window.bossBullets = [];
       shurikens = [];
       particles = [];
-      score = 0;
+
+      // YENİ ZOMBİ TİPLERİNİ SIFIRLA
+      fastZombies = [];
+      armoredZombies = [];
+      bomberZombies = [];
+      crawlerZombies = [];
+
+      // YENİ SİSTEMLERİ SIFIRLA
+      dashSystem.available = true;
+      dashSystem.lastDashTime = 0;
+      playerImmune = false;
+
+      specialAbilities.lightning.lastUse = 0;
+      specialAbilities.tornado.lastUse = 0;
+      specialAbilities.fireball.lastUse = 0;
+
+      activePowerUps.shield.active = false;
+      activePowerUps.electricAura.active = false;
+      activePowerUps.autoAim.active = false;
+      activePowerUps.slowMotion.active = false;
+
+      visualEffects = [];
+      screenShake = { intensity: 0, duration: 0 };
+
+      // score = 0; // Skoru sıfırlama
       zombiesKilled = 0;
       round = 1;
       bulletDropActive = false;
       bulletDrops = [];
       armorActive = false;
       armorDrops = [];
+      hasArmor = false; // Zırh durumunu sıfırla
+
+      // PROGRESSION RESET - Silahları, XP'yi, yükseltmeleri sıfırla
+      // Silahları sıfırla (sadece tabanca kalsın)
+      weapons.rifle.owned = false;
+      weapons.shotgun.owned = false;
+      weapons.laser.owned = false;
+      localStorage.removeItem('weapon_rifle_owned');
+      localStorage.removeItem('weapon_shotgun_owned');
+      localStorage.removeItem('weapon_laser_owned');
+
+      // Silah yükseltmelerini sıfırla
+      weaponUpgrades.pistol = 0;
+      weaponUpgrades.rifle = 0;
+      weaponUpgrades.shotgun = 0;
+      weaponUpgrades.laser = 0;
+      localStorage.removeItem('pistolUpgrade');
+      localStorage.removeItem('rifleUpgrade');
+      localStorage.removeItem('shotgunUpgrade');
+      localStorage.removeItem('laserUpgrade');
+
+      // Oyuncu yükseltmelerini sıfırla
+      playerUpgrades.maxHealthBonus = 0;
+      playerUpgrades.speedBonus = 0;
+      playerUpgrades.rapidFireBonus = 0;
+      playerUpgrades.luckyShot = false;
+      localStorage.removeItem('maxHealthBonus');
+      localStorage.removeItem('speedBonus');
+      localStorage.removeItem('rapidFireBonus');
+      localStorage.removeItem('luckyShot');
+
+      // Oyuncu pozisyon ve durumunu sıfırla
       player.x = 100;
-      player.health = 100;
+      player.y = 350;
+      player.health = 100; // Base health
+      player.maxHealth = 100; // Base max health
+      player.level = 1;
+      player.xp = 0;
+      player.xpToNext = 100;
       player.coins = 0;
+
+      // Coins'i (token) de sıfırla
+      localStorage.setItem('coins', '0');
+
+      playerDirection = 1; // Başlangıçta sağa baksın
+      currentWeapon = 'pistol';
       scoreEl.textContent = score;
       gameOverEl.style.display = 'none';
+
+      // Oyun ekranını düzgün göster ve karakter seçimini gizle
+      startScreen.style.display = 'none'; // Karakter seçimini her zaman gizle
+      gameCanvas.style.display = 'block';
+      uiDiv.style.display = 'block';
+
       setBackground(1);
+      updateWeaponStats(); // Silah statlarını güncelle
       updateUI();
-      updateGame();
-      gameCanvas.style.display = '';
-      uiDiv.style.display = '';
-      if (firstGameStarted) {
-        startScreen.style.display = 'none';
-        introVideoContainer.style.display = 'none';
-      }
+
+      // Power-up durumlarını sıfırla
       doubleShotActive = false;
       powerUp = null;
+      healthPack = null;
       clearTimeout(doubleShotTimeout);
-    }
-
-    window.addEventListener('keydown', e => {
+      // Oyunu başlat
+      startZombieSpawn(); // Zombi spawn'ı başlat
+      if (!gameLoopRunning) {
+        gameLoopRunning = true;
+        updateGame(); // Sadece döngü çalışmıyorsa başlat
+      }
+    } window.addEventListener('keydown', e => {
       keys[e.key] = true;
-      if ((e.code === 'Space' || e.key === ' ') && !gameOver) {
-        let speed = 12;
-        if (doubleShotActive) {
+
+      // Silah değiştirme (1-4 tuşları) - sadece sahip olunan silahlar
+      if (e.key === '1' && weapons.pistol.owned) currentWeapon = 'pistol';
+      else if (e.key === '2' && weapons.rifle.owned) currentWeapon = 'rifle';
+      else if (e.key === '3' && weapons.shotgun.owned) currentWeapon = 'shotgun';
+      else if (e.key === '4' && weapons.laser.owned) currentWeapon = 'laser';
+
+      // YENİ ÖZELLİKLER TUŞLARI
+      // Q - Dash
+      if ((e.key === 'q' || e.key === 'Q') && !gameOver && !gamePaused && !shopOpen && !healthPackOfferOpen) {
+        performDash();
+      }
+
+      // E - Şimşek Saldırısı
+      if ((e.key === 'e' || e.key === 'E') && !gameOver && !gamePaused && !shopOpen && !healthPackOfferOpen) {
+        useSpecialAbility('lightning');
+      }
+
+      // R - Tornado
+      if ((e.key === 'r' || e.key === 'R') && !gameOver && !gamePaused && !shopOpen && !healthPackOfferOpen) {
+        useSpecialAbility('tornado');
+      }
+
+      // T - Ateştopları
+      if ((e.key === 't' || e.key === 'T') && !gameOver && !gamePaused && !shopOpen && !healthPackOfferOpen) {
+        useSpecialAbility('fireball');
+      } if ((e.code === 'Space' || e.key === ' ') && !gameOver && !healthPackOfferOpen) {
+        // Ateş hızı kontrolü
+        if (Date.now() - lastFireTime < weapons[currentWeapon].fireRate) return;
+        lastFireTime = Date.now(); let weapon = weapons[currentWeapon];
+        let speed = weapon.speed;
+
+        // Ses efekti çal
+        if (synthSounds && soundManager.effectsVolume > 0) {
+          synthSounds.shootSound();
+        }
+
+        // Asker karakteri için yön düzeltmesi (asker PNG'si ters olduğu için)
+        let bulletDirection = selectedCharacter === 'asker' ? -playerDirection : playerDirection;
+
+        if (currentWeapon === 'shotgun') {
+          // Pompalı: 3 mermi saçar
+          for (let i = -1; i <= 1; i++) {
+            shurikens.push({
+              x: player.x + player.width / 2,
+              y: player.y + player.height / 2,
+              vx: speed * bulletDirection,
+              vy: i * 3,
+              damage: weapon.damage
+            });
+          }
+        } else if (doubleShotActive) {
           shurikens.push({
             x: player.x + player.width / 2,
             y: player.y + player.height / 2,
-            vx: speed,
-            vy: 0
+            vx: speed * bulletDirection,
+            vy: 0,
+            damage: weapon.damage * 1.5
           });
           shurikens.push({
             x: player.x + player.width / 2,
             y: player.y + player.height / 2,
-            vx: speed,
-            vy: -3
+            vx: speed * bulletDirection,
+            vy: -3,
+            damage: weapon.damage * 1.5
           });
         } else {
           shurikens.push({
             x: player.x + player.width / 2,
             y: player.y + player.height / 2,
-            vx: speed,
-            vy: 0
+            vx: speed * bulletDirection,
+            vy: 0,
+            damage: weapon.damage
           });
         }
         updateUI();
@@ -637,46 +2704,170 @@
     const mobileControls = document.getElementById('mobileControls');
     const fireBtn = document.getElementById('fireBtn');
     if (mobileControls) mobileControls.style.display = 'none';
-    if (fireBtn) fireBtn.style.display = 'none';
-
-    canvas.addEventListener('touchstart', function (e) {
+    if (fireBtn) fireBtn.style.display = 'none'; canvas.addEventListener('touchstart', function (e) {
       if (!gameOver && gameCanvas.style.display !== 'none') {
         let speed = 12;
+
+        // Asker karakteri için yön düzeltmesi (asker PNG'si ters olduğu için)
+        let bulletDirection = selectedCharacter === 'asker' ? -playerDirection : playerDirection;
+
         if (doubleShotActive) {
           shurikens.push({
             x: player.x + player.width / 2,
             y: player.y + player.height / 2,
-            vx: speed,
+            vx: speed * bulletDirection,
             vy: 0
           });
           shurikens.push({
             x: player.x + player.width / 2,
             y: player.y + player.height / 2,
-            vx: speed,
+            vx: speed * bulletDirection,
             vy: -3
           });
         } else {
           shurikens.push({
             x: player.x + player.width / 2,
             y: player.y + player.height / 2,
-            vx: speed,
+            vx: speed * bulletDirection,
             vy: 0
           });
         }
         updateUI();
       }
-    });
+    }); highScoreEl.textContent = localStorage.getItem('highScore') || '0';
 
-    highScoreEl.textContent = localStorage.getItem('highScore') || '0';
-    setInterval(spawnZombie, 1500);
-    setBackground(1);
-    showRoundText();
-    updateUI();
-    updateGame();
-    gameCanvas.style.display = 'none';
-    uiDiv.style.display = 'none';
-    startScreen.style.display = 'none';
-    introVideoContainer.style.display = 'flex';
+    // Zombi spawn interval'ını kaydet
+    let zombieSpawnInterval;
+
+    function startZombieSpawn() {
+      if (zombieSpawnInterval) clearInterval(zombieSpawnInterval);
+      zombieSpawnInterval = setInterval(spawnZombie, 1500);
+    }
+
+    function stopZombieSpawn() {
+      if (zombieSpawnInterval) {
+        clearInterval(zombieSpawnInterval);
+        zombieSpawnInterval = null;
+      }
+    }
+
+    // Silah satın alma fonksiyonu
+    function buyWeapon(weaponType) {
+      let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+      const weapon = weapons[weaponType];
+
+      if (weapon.owned) {
+        showMessage('Bu silaha zaten sahipsin!', 'orange');
+        return;
+      }
+      if (savedCoins >= weapon.price) {
+        savedCoins -= weapon.price;
+        localStorage.setItem('coins', savedCoins);
+        weapon.owned = true;
+        saveOwnedWeapons();
+        updateShopDisplay();
+        showMessage(`${weapon.name} satın alındı!`, 'lime');
+
+        // GÖREVLERİ GÜNCELLe - Eşya satın alındı
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('itemPurchased'));
+        }
+      } else {
+        showMessage(`Yetersiz jeton! ${weapon.price} jeton gerekli.`, 'red');
+      }
+    }
+
+    // Zırh satın alma fonksiyonu
+    function buyArmor() {
+      let savedCoins = parseInt(localStorage.getItem('coins') || '0');
+
+      if (hasArmor) {
+        showMessage('Zaten zırhın var!', 'orange');
+        return;
+      }
+      if (savedCoins >= armorPrice) {
+        savedCoins -= armorPrice;
+        localStorage.setItem('coins', savedCoins);
+        hasArmor = true;
+        updateShopDisplay();
+        showMessage('🛡️ Zırh satın alındı!', 'lime');
+
+        // GÖREVLERİ GÜNCELLe - Eşya satın alındı
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
+          window.dispatchEvent(new CustomEvent('itemPurchased'));
+        }
+      } else {
+        showMessage(`Yetersiz jeton! ${armorPrice} jeton gerekli.`, 'red');
+      }
+    }
+
+    // Mesaj gösterme fonksiyonu
+    function showMessage(text, color) {
+      const messageDiv = document.createElement('div');
+      messageDiv.style.position = 'absolute';
+      messageDiv.style.top = '20%';
+      messageDiv.style.left = '50%';
+      messageDiv.style.transform = 'translate(-50%, -50%)';
+      messageDiv.style.color = color;
+      messageDiv.style.fontSize = '24px';
+      messageDiv.style.fontWeight = 'bold';
+      messageDiv.style.textShadow = '2px 2px 8px #000';
+      messageDiv.style.zIndex = '1001';
+      messageDiv.textContent = text;
+      document.body.appendChild(messageDiv);
+      setTimeout(() => {
+        if (messageDiv.parentNode) messageDiv.parentNode.removeChild(messageDiv);
+      }, 2000);
+    }    // Ana menüye dönüş fonksiyonları
+    function backToMainMenu() {
+      // Oyun durumunu sıfırla
+      gameOver = false;
+      gamePaused = false;
+      shopOpen = false;
+      healthPackOfferOpen = false;
+      firstGameStarted = false;
+      gameLoopRunning = false; // Animasyon döngüsünü durdur
+
+      // Timeout'ları temizle
+      if (roundTextTimeout) {
+        clearTimeout(roundTextTimeout);
+        roundTextTimeout = null;
+      }
+
+      // Mevcut round text'i kaldır
+      let existingRoundText = document.getElementById('roundText');
+      if (existingRoundText && existingRoundText.parentNode) {
+        existingRoundText.parentNode.removeChild(existingRoundText);
+      }
+
+      // Tüm ekranları gizle
+      pauseScreen.style.display = 'none';
+      shopScreen.style.display = 'none';
+      healthPackOffer.style.display = 'none';
+      gameOverEl.style.display = 'none';
+      gameCanvas.style.display = 'none';
+      uiDiv.style.display = 'none';
+      // Oyun verilerini sıfırla
+      zombies = [];
+      bossZombies = [];
+      if (window.bossBullets) window.bossBullets = [];
+      shurikens = [];
+      fastZombies = [];
+      armoredZombies = [];
+      bomberZombies = [];
+      crawlerZombies = [];
+      particles = [];
+
+      // Ana menüyü göster
+      showStartScreen();
+
+      // Zombi spawn'ını durdur
+      stopZombieSpawn();
+    }
+
+    function showMainMenuFromPause() {
+      backToMainMenu();
+    }
   </script>
 </body>
 
