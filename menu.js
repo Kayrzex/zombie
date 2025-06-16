@@ -12,12 +12,14 @@ class MenuSystem {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             z-index: 1000;
             color: white;
             font-family: 'Courier New', monospace;
+            overflow-y: auto;
+            padding: 20px 0;
         ">
-            <div style="text-align: center; margin-bottom: 50px;">
+            <div style="text-align: center; margin: 30px 0 50px 0;">
                 <h1 style="
                     font-size: 64px;
                     background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4ecdc4, #45b7d1);
@@ -133,10 +135,9 @@ class MenuSystem {
                 " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(107, 114, 128, 0.6)'"
                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(107, 114, 128, 0.4)'">
                     ⚙️ AYARLAR
-                </button>
-            </div>
+                </button>            </div>
 
-            <div style="position: absolute; bottom: 20px; text-align: center; color: #666;">
+            <div style="margin-top: 30px; text-align: center; color: #666; padding-bottom: 20px;">
                 <p>💰 Jeton: <span id="menuCoins">${localStorage.getItem('coins') || '0'}</span></p>
                 <p>🏆 En Yüksek Skor: <span id="menuHighScore">${localStorage.getItem('highScore') || '0'}</span></p>
             </div>
@@ -794,8 +795,7 @@ class MenuSystem {
     }
 
     static createGameModesMenu() {
-        return `
-        <div id="gameModesMenu" style="
+        return `        <div id="gameModesMenu" style="
             position: fixed;
             top: 0;
             left: 0;
@@ -805,12 +805,13 @@ class MenuSystem {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             z-index: 1000;
             color: white;
             font-family: 'Courier New', monospace;
-        ">
-            <h1 style="
+            overflow-y: auto;
+            padding: 20px 0;
+        ">            <h1 style="
                 font-size: 48px;
                 background: linear-gradient(45deg, #f59e0b, #d97706, #92400e);
                 background-size: 400% 400%;
@@ -818,7 +819,7 @@ class MenuSystem {
                 -webkit-text-fill-color: transparent;
                 animation: gradientShift 3s ease-in-out infinite;
                 text-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-                margin: 0 0 50px 0;
+                margin: 30px 0 50px 0;
             ">🎮 OYUN MODLARI</h1>
 
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; max-width: 800px;">
@@ -892,11 +893,10 @@ class MenuSystem {
                     <p style="color: #fed7aa; margin: 0; font-size: 16px;">
                         Sadece boss'lar! Arka arkaya gelen dev düşmanlar.
                     </p>
-                </div>
-            </div>
+                </div>            </div>
 
             <button onclick="MenuSystem.showMainMenu()" style="
-                margin-top: 40px;
+                margin: 40px 0 20px 0;
                 padding: 15px 30px;
                 font-size: 20px;
                 background: linear-gradient(45deg, #6b73ff, #000dff);

@@ -46,9 +46,7 @@ class EnemyTypes {
                 coins: 2,
                 size: { width: 48, height: 48 },
                 special: 'flying'
-            },
-
-            // Bölünen zombi (ölünce 2 küçük zombiye bölünür)
+            },            // Bölünen zombi (ölünce 2 küçük zombiye bölünür)
             splitterZombie: {
                 hp: 300,
                 speed: 1.5,
@@ -58,6 +56,18 @@ class EnemyTypes {
                 coins: 4,
                 size: { width: 70, height: 70 },
                 special: 'split'
+            },
+
+            // Sürünen zombi (yerde sürünen, hızlı)
+            crawlerZombie: {
+                hp: 80,
+                speed: 2.5,
+                damage: 15,
+                color: 'green',
+                points: 10,
+                coins: 2,
+                size: { width: 32, height: 32 },
+                special: 'crawler'
             },
 
             // Mini boss (her 3 round'da bir)
@@ -84,10 +94,9 @@ class EnemyTypes {
     }
 
     static getRandomEnemyType(round) {
-        const types = ['speedZombie', 'tankZombie'];
-
-        // Round ilerledikçe yeni düşman türleri ekle
+        const types = ['speedZombie', 'tankZombie'];        // Round ilerledikçe yeni düşman türleri ekle
         if (round >= 2) types.push('poisonZombie');
+        if (round >= 2) types.push('crawlerZombie');
         if (round >= 3) types.push('flyingEnemy');
         if (round >= 4) types.push('splitterZombie');
         if (round >= 3 && round % 3 === 0 && Math.random() < 0.3) {
